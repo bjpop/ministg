@@ -1,0 +1,38 @@
+zero = CON(I 0);
+two = CON(I 2);
+uno = CON(I 1);
+ten = CON(I 10);
+ones = CON(Cons uno ones);
+list1 = CON(Cons uno nil);
+list2 = CON(Cons uno list1);
+list3 = CON(Cons uno list3);
+nil = CON(Nil);
+
+
+subInt = FUN(x y ->
+           case x of
+              { I i ->
+                  case y of
+                     { I j -> case sub i j of
+                                 { x -> let { result = CON (I x) } in result }}});
+
+eqInt = FUN(x y ->
+           case x of
+              { I i ->
+                  case y of
+                     { I j -> case eq i j of
+                                 { x -> intToBool x }}});
+
+
+take = FUN(n xs -> 
+   case eqInt n zero of
+      { True -> nil;
+        False -> case xs of
+                 { Nil -> nil;
+                   Cons hd tl -> let { m = THUNK(subInt n uno);
+                                       rec = THUNK(take m tl);
+                                       result = CON(Cons hd rec) } in result }});
+
+head = FUN(xs -> case xs of { Cons hd tl -> hd });
+
+main = THUNK(take ten ones)

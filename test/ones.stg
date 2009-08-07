@@ -1,0 +1,3 @@
+uno = CON(I 1);
+ones = CON(Cons uno ones);
+main = THUNK(ones)

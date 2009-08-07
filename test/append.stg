@@ -1,0 +1,18 @@
+zero = CON(I 0);
+one = CON(I 1);
+nil = CON(Nil);
+list1 = CON(Cons one nil);
+list2 = CON(Cons one list1);
+list3 = CON(Cons zero list2);
+list4 = THUNK(append list3 list3);
+list5 = THUNK(append list4 list4);
+
+
+append = FUN(l1 l2 -> 
+            case l1 of
+               { Nil -> l2;
+                 Cons hd tl -> let { rec = THUNK(append tl l2);
+                                     result = CON(Cons hd rec) }
+                               in result });
+
+main = THUNK(list5)

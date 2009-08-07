@@ -1,0 +1,37 @@
+zero = CON(I 0);
+one = CON(I 1);
+two = CON(I 2);
+three = CON(I 3);
+six = THUNK(fac three);
+
+multInt = FUN(x y ->
+           case x of
+              { I i -> 
+                  case y of 
+                     { I j -> case mult i j of
+                                 { x -> let { result = CON (I x) } in result }}});
+
+subInt = FUN(x y ->
+           case x of
+              { I i ->
+                  case y of
+                     { I j -> case sub i j of
+                                 { x -> let { result = CON (I x) } in result }}});
+
+eqInt = FUN(x y ->
+           case x of
+              { I i ->
+                  case y of
+                     { I j -> case eq i j of
+                                 { x -> intToBool x }}});
+
+
+fac = FUN (x -> 
+         case eqInt x zero of {
+            True -> one;
+            False -> let { s = THUNK(subInt x one);
+                           rec = THUNK(fac s) }
+                     in multInt x rec
+         });
+
+main = THUNK (fac six) 
