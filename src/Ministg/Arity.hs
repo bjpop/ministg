@@ -1,4 +1,18 @@
 {-# OPTIONS_GHC -XTypeSynonymInstances #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      : Ministg.Arity
+-- Copyright   : (c) 2009 Bernie Pope 
+-- License     : BSD-style
+-- Maintainer  : bjpop@csse.unimelb.edu.au
+-- Stability   : experimental
+-- Portability : ghc
+--
+-- Arity analysis of ministg programs: compute how many arguments each
+-- top-level and let-bound function has, and annotate the application sites
+-- of those functions.
+-----------------------------------------------------------------------------
+
 module Ministg.Arity (runArity, Arity) where
 
 import Data.Map as Map
@@ -7,12 +21,18 @@ import Control.Applicative
 import Ministg.AST
 import Data.List (foldl')
 
+-- | A mapping from variable names (names of functions) to their respective
+-- arities.
 type ArityMap = Map Var Int
+-- | A monad for pushing arity information down the AST, taking care of 
+-- variable scope. 
 type A a = Reader ArityMap a
 
+-- | Arity analysis of a program fragment.
 runArity :: Arity a => a -> a
 runArity x = runReader (arity x) Map.empty 
 
+-- | Overloaded arity function.
 class Arity a where
    arity :: a -> A a 
 
@@ -33,10 +53,12 @@ instance Arity Program where
       as :: ArityMap
       as = Map.fromList [ (var, countArgs obj) | (var, obj) <- decls, isFun obj]
 
+-- | True if an object is a funciton (FUN).
 isFun :: Object -> Bool
 isFun (Fun {}) = True
 isFun other = False
 
+-- | Count the number of arguments (really parameters) of a function object).
 countArgs :: Object -> Int
 countArgs (Fun args _) = length args
 countArgs other = error $ "countArgs called on non function: " ++ show other
@@ -54,5 +76,6 @@ instance Arity Exp where
    arity (Case exp alts) = Case <$> arity exp <*> mapM arity alts 
    arity other = return other
 
+-- | Remove a list of variables from an ArityMap.
 clearVars :: [Var] -> ArityMap -> ArityMap
 clearVars vars map = foldl' (flip Map.delete) map vars

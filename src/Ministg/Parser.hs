@@ -1,3 +1,14 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      : Ministg.Eval
+-- Copyright   : (c) 2009 Bernie Pope 
+-- License     : BSD-style
+-- Maintainer  : bjpop@csse.unimelb.edu.au
+-- Stability   : experimental
+-- Portability : ghc
+--
+-- Parsing for ministg programs.
+-----------------------------------------------------------------------------
 module Ministg.Parser 
    ( parser )
    where
@@ -60,7 +71,7 @@ primApp = PrimApp <$> primOp <*> many1 atom
 
 primOp, add, subtract, multiply, eq, lessThan, greaterThan, lessThanEquals, greaterThanEquals :: Parser Prim
 primOp = add <|> subtract <|> multiply <|> eq <|> 
-         lessThan <|> greaterThan <|> lessThanEquals <|> greaterThanEquals <|> printInt <|> intToBool
+         lessThan <|> greaterThan <|> lessThanEquals <|> greaterThanEquals <|> intToBool
 add = const Add <$> symbol Lex.Plus
 subtract = const Subtract <$> symbol Lex.Minus
 multiply = const Multiply <$> symbol Lex.Times
@@ -69,7 +80,6 @@ lessThan = const LessThan <$> symbol Lex.LessThan
 lessThanEquals = const LessThanEquals <$> symbol Lex.LessThanEquals
 greaterThan = const GreaterThan <$> symbol Lex.GreaterThan
 greaterThanEquals = const GreaterThanEquals <$> symbol Lex.GreaterThanEquals
-printInt = const PrintInt <$> symbol Lex.PrintInt
 intToBool = const IntToBool <$> symbol Lex.IntToBool
 
 letExp :: Parser Exp

@@ -1,3 +1,15 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      : Ministg.Eval
+-- Copyright   : (c) 2009 Bernie Pope 
+-- License     : BSD-style
+-- Maintainer  : bjpop@csse.unimelb.edu.au
+-- Stability   : experimental
+-- Portability : ghc
+--
+-- Lexical analysis for ministg programs.
+-----------------------------------------------------------------------------
+
 module Ministg.Lexer 
    ( Token (..)
    , Symbol (..)
@@ -50,7 +62,6 @@ data Symbol
    | LessThan
    | GreaterThanEquals
    | LessThanEquals
-   | PrintInt
    | IntToBool
    deriving (Eq, Show)
 
@@ -82,13 +93,16 @@ singleLineComment = do
 eol :: Parser ()
 eol = newline >> return ()
 
+-- XXX Perhaps it is not sensible to divide the tokens based on their
+-- syntactic role. Sometimes tokens from different syntactic classes can have
+-- the same prefix.
 token :: Parser Token
 token = 
-   punctuation       <|>
-   keyword           <|> 
-   variable          <|> 
-   constructor       <|>
-   parenthesis       <|> 
+   punctuation <|>
+   keyword     <|> 
+   variable    <|> 
+   constructor <|>
+   parenthesis <|> 
    number
 
 number :: Parser Token
@@ -130,7 +144,6 @@ keyword =
    key "lte" LessThanEquals <|>
    key "gt" GreaterThan <|>
    key "gte" GreaterThanEquals <|>
-   key "printInt" PrintInt <|>
    key "intToBool" IntToBool
    where
    key :: String -> Symbol -> Parser Token

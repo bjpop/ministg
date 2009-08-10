@@ -1,3 +1,14 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      : Ministg.Eval
+-- Copyright   : (c) 2009 Bernie Pope 
+-- License     : BSD-style
+-- Maintainer  : bjpop@csse.unimelb.edu.au
+-- Stability   : experimental
+-- Portability : ghc
+--
+-- Some handy utilities. 
+-----------------------------------------------------------------------------
 module Ministg.Utils where
 
 import Control.Monad 
