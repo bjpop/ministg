@@ -19,7 +19,7 @@ extra-source-files:
 Executable ministg 
   main-is:         Main.hs
   hs-source-dirs:  src
-  build-depends:   base, monads-tf, transformers, containers, parsec, pretty, haskell98
+  build-depends:   base, monads-tf, transformers, containers, parsec >= 3, pretty, haskell98
   other-modules:
       Ministg.AST
       Ministg.Lexer
