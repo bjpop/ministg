@@ -26,6 +26,7 @@ import Data.Char
    )
 
 import Text.ParserCombinators.Parsec hiding (token)
+import Control.Applicative hiding ((<|>), many)
 
 newtype Token = Token (SourcePos, Symbol)
 
@@ -69,11 +70,7 @@ lexer :: String -> String -> Either ParseError [Token]
 lexer = parse tokenise 
 
 tokenise :: Parser [Token]
-tokenise = do
-   skip 
-   ts <- sepEndBy token skip
-   eof
-   return ts
+tokenise = skip *> sepEndBy token skip <* eof
 
 skip :: Parser ()
 skip = skipMany (comment <|> whiteSpace)
@@ -85,10 +82,7 @@ comment :: Parser ()
 comment = singleLineComment
 
 singleLineComment :: Parser ()
-singleLineComment = do
-   string  "#" 
-   manyTill anyChar eol 
-   return ()
+singleLineComment = string  "#" >> manyTill anyChar eol >> return ()
 
 eol :: Parser ()
 eol = newline >> return ()
@@ -109,9 +103,7 @@ number :: Parser Token
 number = tokenPos parseNum Natural
    where
    parseNum :: Parser Integer
-   parseNum = do
-      ds <- many1 digit
-      return $ read ds
+   parseNum = read <$> many1 digit
 
 variable :: Parser Token
 variable = tokenPos (parseIdent lower) Variable 
@@ -120,11 +112,7 @@ constructor :: Parser Token
 constructor = tokenPos (parseIdent upper) Constructor
 
 parseIdent :: Parser Char -> Parser String
-parseIdent firstChar = do
-   start <- firstChar 
-   let identChar = char '_' <|> alphaNum
-   rest  <- many identChar
-   return $ start : rest
+parseIdent firstChar = (:) <$> firstChar <*> many (char '_' <|> alphaNum) 
 
 keyword :: Parser Token
 keyword =
@@ -169,7 +157,5 @@ simpleTok :: String -> Symbol -> Parser Token
 simpleTok str token = tokenPos (string str) (const token) 
 
 tokenPos :: Parser a -> (a -> Symbol) -> Parser Token
-tokenPos parser mkToken = do
-   pos <- getPosition
-   res <- parser 
-   return $ Token (pos, mkToken res)
+tokenPos parser mkToken = 
+  Token <$> ((,) <$> getPosition <*> (mkToken <$> parser))
