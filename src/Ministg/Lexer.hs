@@ -39,6 +39,7 @@ data Symbol
    = Variable Ident 
    | Constructor Ident
    | Natural Integer
+   | QuotedString String
    | Equals
    | BackSlash 
    | RightArrow
@@ -64,6 +65,8 @@ data Symbol
    | GreaterThanEquals
    | LessThanEquals
    | IntToBool
+   | Stack
+   | Error
    deriving (Eq, Show)
 
 lexer :: String -> String -> Either ParseError [Token] 
@@ -97,13 +100,20 @@ token =
    variable    <|> 
    constructor <|>
    parenthesis <|> 
-   number
+   number <|>
+   quotedString
 
 number :: Parser Token
 number = tokenPos parseNum Natural
    where
    parseNum :: Parser Integer
    parseNum = read <$> many1 digit
+
+quotedString :: Parser Token
+quotedString = tokenPos parseString QuotedString
+   where
+   parseString :: Parser String
+   parseString = char '"' *> manyTill anyChar (char '"')
 
 variable :: Parser Token
 variable = tokenPos (parseIdent lower) Variable 
@@ -124,15 +134,17 @@ keyword =
    key "CON"   Con   <|>
    key "PAP"   Pap   <|>
    key "THUNK" Thunk <|>
-   key "plus" Plus <|>
-   key "sub" Minus <|>
-   key "mult" Times <|>
-   key "eq" Equality <|>
-   key "lt" LessThan <|>
-   key "lte" LessThanEquals <|>
-   key "gt" GreaterThan <|>
-   key "gte" GreaterThanEquals <|>
-   key "intToBool" IntToBool
+   key "plus#" Plus  <|>
+   key "sub#"  Minus <|>
+   key "mult#" Times <|>
+   key "eq#"   Equality <|>
+   key "lt#"   LessThan <|>
+   key "lte#"  LessThanEquals <|>
+   key "gt#"   GreaterThan <|>
+   key "gte#"  GreaterThanEquals <|>
+   key "intToBool#" IntToBool <|>
+   key "error" Error <|>
+   key "stack" Stack
    where
    key :: String -> Symbol -> Parser Token
    key str keyWord = tokenPos (try kwParser) (const keyWord)

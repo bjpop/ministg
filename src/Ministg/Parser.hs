@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      : Ministg.Eval
+-- Module      : Ministg.Parser
 -- Copyright   : (c) 2009 Bernie Pope 
 -- License     : BSD-style
 -- Maintainer  : bjpop@csse.unimelb.edu.au
@@ -32,9 +32,7 @@ tokenParser test
 symbol :: Lex.Symbol -> Parser ()
 symbol tok
    = tokenParser $ 
-        \next -> if next == tok 
-                    then Just () 
-                    else Nothing
+        \next -> if next == tok then Just () else Nothing
 
 parser :: FilePath -> String -> Either ParseError Program 
 parser source input
@@ -49,7 +47,25 @@ decl :: Parser Decl
 decl = (,) <$> var <*> (equals *> object)
 
 exp :: Parser Exp
-exp = funCallOrVar <|> expAtomLiteral <|> primApp <|> letExp <|> caseExp
+exp = funCallOrVar <|> 
+      expAtomLiteral <|> 
+      primApp <|> 
+      letExp <|> 
+      caseExp <|>
+      errorCall <|>
+      stack
+
+errorCall :: Parser Exp
+errorCall = const Error <$> symbol Lex.Error
+
+stack :: Parser Exp
+stack = Stack <$> (symbol Lex.Stack *> quotedString) <*> exp
+
+quotedString :: Parser String 
+quotedString = tokenParser getString
+   where
+   getString (Lex.QuotedString s) = Just s
+   getString other = Nothing 
 
 funCallOrVar :: Parser Exp
 funCallOrVar = do
@@ -70,8 +86,18 @@ primApp :: Parser Exp
 primApp = PrimApp <$> primOp <*> many1 atom 
 
 primOp, add, subtract, multiply, eq, lessThan, greaterThan, lessThanEquals, greaterThanEquals :: Parser Prim
-primOp = add <|> subtract <|> multiply <|> eq <|> 
-         lessThan <|> greaterThan <|> lessThanEquals <|> greaterThanEquals <|> intToBool
+
+primOp = 
+   add <|> 
+   subtract <|> 
+   multiply <|> 
+   eq <|> 
+   lessThan <|> 
+   greaterThan <|> 
+   lessThanEquals <|> 
+   greaterThanEquals <|> 
+   intToBool
+
 add = const Add <$> symbol Lex.Plus
 subtract = const Subtract <$> symbol Lex.Minus
 multiply = const Multiply <$> symbol Lex.Times

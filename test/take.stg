@@ -13,15 +13,15 @@ subInt = FUN(x y ->
            case x of
               { I i ->
                   case y of
-                     { I j -> case sub i j of
+                     { I j -> case sub# i j of
                                  { x -> let { result = CON (I x) } in result }}});
 
 eqInt = FUN(x y ->
            case x of
               { I i ->
                   case y of
-                     { I j -> case eq i j of
-                                 { x -> intToBool x }}});
+                     { I j -> case eq# i j of
+                                 { x -> intToBool# x }}});
 
 
 take = FUN(n xs -> 

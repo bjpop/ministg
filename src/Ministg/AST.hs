@@ -40,6 +40,8 @@ data Exp
    | PrimApp Prim [Atom]        -- ^ Saturated primitive application (op a_1 ... a_n, n >= 1).
    | Let Var Object Exp         -- ^ Let declaration. 
    | Case Exp [Alt]             -- ^ Case expression.
+   | Error                      -- ^ Raise an exception.
+   | Stack String Exp           -- ^ Like SCC, but just for stacks. (stack str (exp))
    deriving (Eq, Show)
 
 -- | Case alternatives (the right-hand-sides of case branches).

@@ -203,6 +203,8 @@ smallStep PushEnter (Atom (Variable f)) stack heap
 smallStep PushEnter (Atom (Variable f)) stack@(ArgCont _ : stackRest) heap
    | Pap g args <- lookupHeap f heap =
         return $ Just (Atom (Variable g), map ArgCont args ++ stack, heap) 
+-- ERROR
+smallStep _anyStyle Error stack heap = error $ show stack
 smallStep _anyStyle _other _stack _heap = return Nothing
 
 -- | Evaluate the application of a primitive function. It is assumed that the
@@ -306,6 +308,8 @@ instance Substitute Exp where
       where
       newSub = removeVars [var] s
    subs s (Case exp alts) = Case (subs s exp) (subs s alts)
+   subs _s Error = Error
+   subs s (Stack str e) = Stack str $ subs s e
 
 instance Substitute Alt where
    subs s p@(PatAlt cons vars exp)
