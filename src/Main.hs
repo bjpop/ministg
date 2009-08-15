@@ -15,7 +15,7 @@
 module Main where
 
 import Ministg.AST
-   ( Program )
+   ( Program, prettyProgram )
 
 import Ministg.Parser
    ( parser )
@@ -38,6 +38,8 @@ import Ministg.Arity
 
 import Ministg.Eval (run, Style(PushEnter, EvalApply))
 
+import Ministg.Pretty ( render )
+
 -- | The main driver of the program.
 main :: IO ()
 main = do
@@ -50,10 +52,11 @@ main = do
          Right contents -> do
             -- parse the program
             program <- parseFile file contents 
+            -- print program
             -- compute arities of known functions
             let arityProgram = runArity program
-            -- execute the program
-            run PushEnter arityProgram
+            -- run PushEnter arityProgram
+            putStrLn $ render $ prettyProgram $ arityProgram
 
 -- | Parse a ministg program from the contents of a named file.
 parseFile :: FilePath   -- ^ The name of the file.

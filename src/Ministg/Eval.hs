@@ -19,12 +19,13 @@ import Control.Monad.Trans
 import Data.Map as Map hiding (map)
 import Data.List (foldl')
 import Ministg.AST
+import Ministg.CallStack (CallStack, push, showCallStack)
 
 -- | Stack continuations.
 data Continuation
-   = CaseCont [Alt]  -- ^ The alternatives of a case expression.
-   | UpdateCont Var  -- ^ A variable which points to a thunk to be updated.
-   | ArgCont Atom    -- ^ A pending argument (used only by the push-enter model).
+   = CaseCont [Alt] CallStack -- ^ The alternatives of a case expression.
+   | UpdateCont Var CallStack -- ^ A variable which points to a thunk to be updated.
+   | ArgCont Atom         -- ^ A pending argument (used only by the push-enter model).
    deriving (Eq, Show)
 
 -- | The evaluation stack. 
@@ -32,7 +33,7 @@ type Stack = [Continuation]
 -- | The heap (mapping variables to objects).
 type Heap = Map.Map Var Object
 -- | State to be threaded through evaluation.
-data EvalState = EvalState { state_unique :: Int }
+data EvalState = EvalState { state_unique :: Int, state_callStack :: CallStack }
 -- | Eval monad. Combines State and IO.
 type Eval a = StateT EvalState IO a
 -- | The style of semantics: push-enter or eval-apply
@@ -42,13 +43,21 @@ data Style
    deriving (Eq, Show)
 
 initState :: EvalState
-initState = EvalState { state_unique = 0 }
+initState = EvalState { state_unique = 0, state_callStack = [] }
 
 initHeap :: Program -> Heap
 initHeap = Map.fromList
 
 initStack :: Stack
 initStack = []
+
+pushCallStack :: String -> Eval ()
+pushCallStack str = do
+   cs <- gets state_callStack
+   modify $ \s -> s { state_callStack = push str cs }
+
+setCallStack :: CallStack -> Eval ()
+setCallStack cs = modify $ \s -> s { state_callStack = cs }
 
 -- | Lookup a variable in a heap. If found return the corresponding
 -- object, otherwise throw an error (it is a fatal error which can't
@@ -92,28 +101,34 @@ evalProgram style heap = do
 -- so it could use a lot of stack space for large answers.
 printFullResult :: Style -> Atom -> Stack -> Heap -> Eval (Stack, Heap) 
 printFullResult style atom stack heap = do
-   (Atom newAtom, newStack, newHeap) <- bigStep style (Atom atom) stack heap
-   case newAtom of
-      (Literal (Integer i)) -> do
-         liftIO $ putStr $ show i 
-         return (newStack, newHeap)
-      (Variable v) -> do
-         case lookupHeap v newHeap of
-            -- We don't look inside functions or paps. XXX For debugging purposes it
-            -- might be nicer to print more than "<function>".
-            Fun {} -> do
-               liftIO $ putStr "<function>"
-               return (newStack, newHeap)
-            Pap {} -> do
-               liftIO $ putStr "<pap>"
-               return (newStack, newHeap)
-            Con constructor args -> do
-               liftIO $ putStr $ "(" ++ constructor
-               -- print the arguments of the constructor.
-               -- XXX Note the lack of tail recursion.
-               (finalStack, finalHeap) <- printArgs style args newStack newHeap 
-               liftIO $ putStr ")"
-               return (finalStack, finalHeap)
+   (newExpr, newStack, newHeap) <- bigStep style (Atom atom) stack heap
+   case newExpr of
+      Atom newAtom -> case newAtom of
+         (Literal (Integer i)) -> do
+            liftIO $ putStr $ show i 
+            return (newStack, newHeap)
+         (Variable v) -> do
+            case lookupHeap v newHeap of
+               -- We don't look inside functions or paps. XXX For debugging purposes it
+               -- might be nicer to print more than "<function>".
+               Fun {} -> do
+                  liftIO $ putStr "<function>"
+                  return (newStack, newHeap)
+               Pap {} -> do
+                  liftIO $ putStr "<pap>"
+                  return (newStack, newHeap)
+               Con constructor args -> do
+                  liftIO $ putStr $ "(" ++ constructor
+                  -- print the arguments of the constructor.
+                  -- XXX Note the lack of tail recursion.
+                  (finalStack, finalHeap) <- printArgs style args newStack newHeap 
+                  liftIO $ putStr ")"
+                  return (finalStack, finalHeap)
+               other -> error $ show other
+      otherExpression -> do
+         liftIO $ putStrLn "Program terminated abnormally"
+         -- liftIO $ print otherExpression
+         return (newStack, newHeap) 
         
 -- | Recursively print (and hence evaluate) the arguments of a data constructor.
 printArgs :: Style -> [Atom] -> Stack -> Heap -> Eval (Stack, Heap)
@@ -127,6 +142,14 @@ printArgs style (a:as) stack heap = do
 -- of one or more small step reductions).
 bigStep :: Style -> Exp -> Stack -> Heap -> Eval (Exp, Stack, Heap) 
 bigStep style exp stack heap = do
+{-
+   cs <- gets state_callStack
+   liftIO $ putStrLn "------------" 
+   liftIO $ print exp
+   liftIO $ putStrLn "------------" 
+   liftIO $ print cs 
+   liftIO $ print stack 
+-}
    result <- smallStep style exp stack heap
    case result of
       -- Nothing more to do, we have reached a WHNF value (or perhaps some error).
@@ -137,10 +160,21 @@ bigStep style exp stack heap = do
 -- | Perform one step of reduction. These equations correspond to the
 -- rules in the operational semantics described in the "fast curry" paper.
 smallStep :: Style -> Exp -> Stack -> Heap -> Eval (Maybe (Exp, Stack, Heap))
+-- ERROR
+smallStep _anyStyle Error stack heap = do
+   cs <- gets state_callStack
+   liftIO $ putStrLn $ showCallStack cs
+   return Nothing
+-- STACK ANNOTATION
+smallStep style (Stack annotation exp) stack heap = do
+   pushCallStack annotation
+   return $ Just (exp, stack, heap)
 -- LET
 smallStep _anyStyle (Let var object exp) stack heap = do
    newVar <- freshVar
-   let newHeap = updateHeap newVar object heap
+   callStack <- gets state_callStack
+   let annotatedObject = setThunkStack callStack object
+   let newHeap = updateHeap newVar annotatedObject heap
    let newExp = subs (mkSub var (Variable newVar)) exp 
    return $ Just (newExp, stack, newHeap)
 -- CASECON
@@ -154,19 +188,25 @@ smallStep _anyStyle (Case (Atom v) alts) stack heap
      Just (x, exp) <- defaultPatternMatch alts =
         return $ Just (subs (mkSub x v) exp, stack, heap)
 -- CASE
-smallStep _anyStyle (Case exp alts) stack heap = return $ Just (exp, CaseCont alts : stack, heap)
+smallStep _anyStyle (Case exp alts) stack heap = do
+   callStack <- gets state_callStack
+   return $ Just (exp, CaseCont alts callStack : stack, heap)
 -- RET 
-smallStep _anyStyle exp@(Atom atom) (CaseCont alts : stackRest) heap
-   | isLiteral atom || isValue (lookupHeapAtom atom heap) = 
+smallStep _anyStyle exp@(Atom atom) (CaseCont alts oldCallStack : stackRest) heap
+   | isLiteral atom || isValue (lookupHeapAtom atom heap) = do
+        setCallStack oldCallStack
         return $ Just (Case exp alts, stackRest, heap)
 -- THUNK 
 smallStep _anyStyle (Atom (Variable x)) stack heap
-   | Thunk exp <- lookupHeap x heap = do
+   | Thunk exp thunkCallStack <- lookupHeap x heap = do
         let newHeap = updateHeap x BlackHole heap
-        return $ Just (exp, UpdateCont x : stack, newHeap)
+        oldCallStack <- gets state_callStack
+        setCallStack thunkCallStack 
+        return $ Just (exp, UpdateCont x oldCallStack : stack, newHeap)
 -- UPDATE
-smallStep _anyStyle atom@(Atom (Variable y)) (UpdateCont x : stackRest) heap
-   | object <- lookupHeap y heap, isValue object = 
+smallStep _anyStyle atom@(Atom (Variable y)) (UpdateCont x oldCallStack : stackRest) heap
+   | object <- lookupHeap y heap, isValue object = do
+        setCallStack oldCallStack
         return $ Just (atom, stackRest, updateHeap x object heap)
 -- KNOWNCALL
 smallStep _anyStyle (FunApp (Just arity) var args) stack heap
@@ -203,8 +243,7 @@ smallStep PushEnter (Atom (Variable f)) stack heap
 smallStep PushEnter (Atom (Variable f)) stack@(ArgCont _ : stackRest) heap
    | Pap g args <- lookupHeap f heap =
         return $ Just (Atom (Variable g), map ArgCont args ++ stack, heap) 
--- ERROR
-smallStep _anyStyle Error stack heap = error $ show stack
+-- NOTHING MORE TO DO
 smallStep _anyStyle _other _stack _heap = return Nothing
 
 -- | Evaluate the application of a primitive function. It is assumed that the
@@ -263,6 +302,10 @@ mkIntPrim op [Literal (Integer i), Literal (Integer j)] stack heap
 -- | Convenience function for making integer comparison primitives. 
 mkIntComparePrim :: (Integer -> Integer -> Bool) -> [Atom] -> Stack -> Heap -> Eval (Atom, Stack, Heap)
 mkIntComparePrim op args stack heap = mkIntPrim (\i j -> if i `op` j then 1 else 0) args stack heap
+
+setThunkStack :: CallStack -> Object -> Object
+setThunkStack cs (Thunk e _oldCS) = Thunk e cs
+setThunkStack cs other = other
 
 type Substitution = Map.Map Var Atom
 
@@ -323,5 +366,5 @@ instance Substitute Object where
    subs s (Pap var atoms)
       = Pap (subsVar s var) (subs s atoms)
    subs s (Con constructor atoms) = Con constructor $ subs s atoms
-   subs s (Thunk exp) = Thunk $ subs s exp
+   subs s (Thunk exp cs) = Thunk (subs s exp) cs
    subs s BlackHole = BlackHole

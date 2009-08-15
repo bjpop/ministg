@@ -44,7 +44,7 @@ instance Arity Alt where
 
 instance Arity Object where
    arity (Fun args body) = Fun args <$> local (clearVars args) (arity body)
-   arity (Thunk exp) = Thunk <$> arity exp 
+   arity (Thunk exp cs) = Thunk <$> arity exp <*> pure cs
    arity other = return other
 
 instance Arity Program where
@@ -74,6 +74,7 @@ instance Arity Exp where
            Let var <$> arity object <*> local (Map.insert var $ countArgs object) (arity exp)
       | otherwise = Let var <$> arity object <*> local (clearVars [var]) (arity exp)
    arity (Case exp alts) = Case <$> arity exp <*> mapM arity alts 
+   arity (Stack annotation exp) = Stack annotation <$> arity exp
    arity other = return other
 
 -- | Remove a list of variables from an ArityMap.

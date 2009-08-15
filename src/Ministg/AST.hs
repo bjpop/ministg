@@ -12,7 +12,9 @@
 module Ministg.AST where
 
 import Prelude 
-import Ministg.Lexer
+-- import qualified Ministg.Lexer as Lex
+import Ministg.CallStack (CallStack)
+import Ministg.Pretty
 
 -- | Variables (also known as identifiers).
 type Var = String
@@ -23,15 +25,27 @@ type Constructor = String
 data Literal = Integer Integer 
    deriving (Eq, Show)
 
+instance Pretty Literal where
+   pretty (Integer i) = pretty i
+
 -- | Atomic expressions.
 data Atom
    = Literal Literal    -- ^ Literal values (unoboxed integers).
    | Variable Var       -- ^ Variables.
    deriving (Eq, Show)
 
+instance Pretty Atom where
+   pretty (Literal l) = pretty l
+   pretty (Variable v) = text v
+
 -- | The arity (number of parameters) of a function. It is only known when the function 
 -- being applied is statically known (not lambda bound).
 type FunArity = Maybe Int
+
+prettyArity :: FunArity -> Doc
+prettyArity Nothing = text "_?" 
+prettyArity (Just i) = text "_" <> int i
+
 
 -- | Expressions.
 data Exp 
@@ -44,11 +58,49 @@ data Exp
    | Stack String Exp           -- ^ Like SCC, but just for stacks. (stack str (exp))
    deriving (Eq, Show)
 
+instance Pretty Exp where
+   pretty (Atom a) = pretty a
+   pretty (FunApp arity var atoms) = text var <> prettyArity arity <+> hsep (map pretty atoms)
+   pretty (PrimApp prim atoms) = pretty prim <+> hsep (map pretty atoms)
+   pretty letExp@(Let var obj exp) 
+      = text "let {" $$
+           (nest 3 (vcat (punctuate semi (map prettyDecl decls)))) $$ rbrace <+> text "in" <+> pretty inExp 
+      where
+      (decls, inExp) = unflattenLet letExp
+   pretty (Case exp alts) = 
+      text "case" <+> pretty exp <+> text "of {" $$ 
+      nest 3 (vcat (punctuate semi (map pretty alts))) $$
+      rbrace
+   pretty Error = text "error"
+   pretty (Stack annotation exp) = text "stack" <+> doubleQuotes (text annotation) <+> parens (pretty exp)
+
+-- This is purely for making the output pretty, it is not guaranteed to return True for all
+-- truly nested expressions.
+isNestedExp :: Exp -> Bool
+isNestedExp (Let {}) = True
+isNestedExp (Case {}) = True
+-- Stack annotations are nested, but they are not big, so we don't want to put them on another line
+isNestedExp other = False 
+
+unflattenLet :: Exp -> ([Decl], Exp)
+unflattenLet exp = unflattenLetAcc exp []
+   where
+   unflattenLetAcc :: Exp -> [Decl] -> ([Decl], Exp)
+   unflattenLetAcc (Let var obj exp) ds = unflattenLetAcc exp ((var,obj):ds) 
+   unflattenLetAcc exp ds = (reverse ds, exp) 
+
 -- | Case alternatives (the right-hand-sides of case branches).
 data Alt
    = PatAlt Constructor [Var] Exp  -- ^ Constructor pattern (C x_1 ... x_n -> e, n >= 0).
    | DefaultAlt Var Exp            -- ^ Default pattern (matches anything) (x -> e).
    deriving (Eq, Show)
+
+instance Pretty Alt where
+   pretty (PatAlt con vars exp) = text con <+> hsep (map text vars) <> rightArrow <> pretty exp
+   pretty (DefaultAlt var exp) = text var <> rightArrow <> pretty exp
+
+rightArrow :: Doc
+rightArrow = text " -> " 
 
 -- | Objects. These serve two roles in the language: 
 -- 
@@ -59,14 +111,29 @@ data Object
    = Fun [Var] Exp                 -- ^ Function values (FUN (x_1 ... x_n -> e).
    | Pap Var [Atom]                -- ^ Partial applications (PAP (f a_1 ... a_n)).
    | Con Constructor [Atom]        -- ^ Data constructor application (CON (C a_1 ... a_n)).
-   | Thunk Exp                     -- ^ THUNK (e).
+   | Thunk Exp CallStack           -- ^ THUNK (e).
    | BlackHole                     -- ^ BLACKHOLE (only during evaluation - not part of the language syntax).
    deriving (Eq, Show)
 
+instance Pretty Object where
+   pretty (Fun vars exp) 
+      = text "FUN" <> parens ((hsep (map text vars) <> rightArrow) `maybeNest` pretty exp)
+      where  
+      maybeNest = if isNestedExp exp then ($$) else (<>)
+   pretty (Pap var atoms) = text "PAP" <> parens (text var <+> hsep (map pretty atoms))
+   pretty (Con constructor atoms) = text "CON" <> parens (text constructor <+> hsep (map pretty atoms))
+   pretty (Thunk exp _stack) = text "THUNK" <> parens (pretty exp)
+   pretty BlackHole = text "BLACKHOLE"
+
 -- | A top-level declaration (f = obj).
 type Decl = (Var, Object)
+
+prettyDecl :: Decl -> Doc
+prettyDecl (var, obj) = text var <+> equals <+> pretty obj
 -- | A whole program.
 type Program = [Decl]
+
+prettyProgram decls = vcat (punctuate semi (map prettyDecl decls))
 
 -- | Primitive operators.
 data Prim
@@ -80,3 +147,14 @@ data Prim
    | GreaterThanEquals          -- ^ Unboxed integer greater-than-equals comparison ( x >= y).
    | IntToBool                  -- ^ Convert an unboxed integer to a (boxed) boolean ( 1 = True, 0 = False).
    deriving (Eq, Show)
+
+instance Pretty Prim where
+   pretty Add = text "plus#"
+   pretty Subtract = text "sub#"
+   pretty Multiply = text "mult#"
+   pretty Equality = text "eq#"
+   pretty LessThan = text "lt#"
+   pretty GreaterThan = text "gt#"
+   pretty LessThanEquals = text "lte#"
+   pretty GreaterThanEquals = text "gte#" 
+   pretty IntToBool = text "intToBool#"

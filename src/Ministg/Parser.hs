@@ -16,7 +16,7 @@ module Ministg.Parser
 import Prelude hiding (exp, subtract)
 import Text.ParserCombinators.Parsec hiding (Parser)
 import qualified Ministg.Lexer as Lex
-import Ministg.AST 
+import Ministg.AST hiding (rightArrow)
 import Control.Applicative hiding ((<|>), many)
 
 type Parser a = GenParser Lex.Token () a
@@ -59,7 +59,7 @@ errorCall :: Parser Exp
 errorCall = const Error <$> symbol Lex.Error
 
 stack :: Parser Exp
-stack = Stack <$> (symbol Lex.Stack *> quotedString) <*> exp
+stack = Stack <$> (symbol Lex.Stack *> quotedString) <*> (leftParen *> exp <* rightParen)
 
 quotedString :: Parser String 
 quotedString = tokenParser getString
@@ -142,7 +142,7 @@ fun, pap, con, thunk :: Parser Object
 fun = Fun <$> (symbol Lex.Fun *> leftParen *> many1 var) <*> (rightArrow *> exp <* rightParen)
 pap = Pap <$> (symbol Lex.Pap *> leftParen *> var) <*> (many1 atom <* rightParen)
 con = Con <$> (symbol Lex.Con *> leftParen *> constructor) <*> (many atom <* rightParen)
-thunk = Thunk <$> (symbol Lex.Thunk *> leftParen *> exp <* rightParen)
+thunk = Thunk <$> (symbol Lex.Thunk *> leftParen *> exp <* rightParen) <*> pure []
 
 var :: Parser Var 
 var = tokenParser getIdent

@@ -27,3 +27,4 @@ Executable ministg
       Ministg.Utils
       Ministg.Eval
       Ministg.Arity
+      Ministg.Pretty
