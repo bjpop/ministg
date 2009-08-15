@@ -3,6 +3,7 @@ one = CON(I 1);
 two = CON(I 2);
 three = CON(I 3);
 six = THUNK(fac three);
+seven = CON(I 7);
 
 multInt = FUN(x y ->
            case x of
@@ -34,4 +35,4 @@ fac = FUN (x ->
                      in multInt x rec
          });
 
-main = THUNK (fac two) 
+main = THUNK (fac seven) 

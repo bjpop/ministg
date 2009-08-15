@@ -94,6 +94,7 @@ bigStep :: Style -> Exp -> Stack -> Heap -> Eval (Exp, Stack, Heap)
 bigStep style exp stack heap = do
    dumpState exp stack heap
    result <- smallStep style exp stack heap
+   incStepCount
    case result of
       -- Nothing more to do, we have reached a WHNF value (or perhaps some error).
       Nothing -> return (exp, stack, heap)
@@ -181,7 +182,7 @@ smallStep PushEnter (Atom (Variable f)) stack heap
      length vars > length argConts = do
         let argAtoms = [atom | ArgCont atom <- argConts]
         p <- freshVar
-        return $ Just (Atom (Variable p), stack, updateHeap p (Pap f argAtoms) heap)
+        return $ Just (Atom (Variable p), drop (length argConts) stack, updateHeap p (Pap f argAtoms) heap)
 -- PENTER
 smallStep PushEnter (Atom (Variable f)) stack@(ArgCont _ : stackRest) heap
    | Pap g args <- lookupHeap f heap =

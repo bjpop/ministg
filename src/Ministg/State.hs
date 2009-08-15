@@ -27,6 +27,7 @@ module Ministg.State
    , lookupHeapAtom
    , updateHeap
    , freshVar
+   , incStepCount
    )
    where
 
@@ -63,7 +64,7 @@ prettyStack stack = (vcat $ map prettyCont stack)
 type Heap = Map.Map Var Object
 -- | State to be threaded through evaluation.
 
-data EvalState = EvalState { state_unique :: Int, state_callStack :: CallStack }
+data EvalState = EvalState { state_unique :: !Int, state_callStack :: CallStack, state_stepCount :: !Int }
 -- | Eval monad. Combines State and IO.
 type Eval a = StateT EvalState IO a
 -- | The style of semantics: push-enter or eval-apply
@@ -73,13 +74,18 @@ data Style
    deriving (Eq, Show)
 
 initState :: EvalState
-initState = EvalState { state_unique = 0, state_callStack = [] }
+initState = EvalState { state_unique = 0, state_callStack = [], state_stepCount = 0 }
 
 initHeap :: Program -> Heap
 initHeap = Map.fromList
 
 initStack :: Stack
 initStack = []
+
+incStepCount :: Eval ()
+incStepCount = do
+   sc <- gets state_stepCount
+   modify $ \s -> s { state_stepCount = sc + 1 } 
 
 pushCallStack :: String -> Eval ()
 pushCallStack str = do
