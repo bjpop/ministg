@@ -63,23 +63,25 @@ instance Pretty Exp where
    pretty (FunApp arity var atoms) = text var <> prettyArity arity <+> hsep (map pretty atoms)
    pretty (PrimApp prim atoms) = pretty prim <+> hsep (map pretty atoms)
    pretty letExp@(Let var obj exp) 
-      = text "let {" $$
-           (nest 3 (vcat (punctuate semi (map prettyDecl decls)))) $$ rbrace <+> text "in" <+> pretty inExp 
+      = maybeNest (text "let {") prettyDecls (rbrace <+> text "in" <+> pretty inExp)
       where
       (decls, inExp) = unflattenLet letExp
+      prettyDecls = vcat (punctuate semi (map prettyDecl decls))
+      maybeNest letPart declPart inPart
+         | length decls < 2 = letPart <+> declPart <+> inPart
+         | otherwise = letPart $$ (nest 3 declPart) $$ inPart
    pretty (Case exp alts) = 
       text "case" <+> pretty exp <+> text "of {" $$ 
       nest 3 (vcat (punctuate semi (map pretty alts))) $$
       rbrace
    pretty Error = text "error"
-   pretty (Stack annotation exp) = text "stack" <+> doubleQuotes (text annotation) <+> parens (pretty exp)
+   pretty (Stack annotation exp) = 
+      maybeNest exp (text "stack" <+> doubleQuotes (text annotation)) (parens (pretty exp))
 
--- This is purely for making the output pretty, it is not guaranteed to return True for all
--- truly nested expressions.
 isNestedExp :: Exp -> Bool
 isNestedExp (Let {}) = True
 isNestedExp (Case {}) = True
--- Stack annotations are nested, but they are not big, so we don't want to put them on another line
+isNestedExp (Stack {}) = True
 isNestedExp other = False 
 
 unflattenLet :: Exp -> ([Decl], Exp)
@@ -96,11 +98,11 @@ data Alt
    deriving (Eq, Show)
 
 instance Pretty Alt where
-   pretty (PatAlt con vars exp) = text con <+> hsep (map text vars) <> rightArrow <> pretty exp
-   pretty (DefaultAlt var exp) = text var <> rightArrow <> pretty exp
+   pretty (PatAlt con vars exp) = maybeNest exp (text con <+> hsep (map text vars) <+> rightArrow) (pretty exp)
+   pretty (DefaultAlt var exp) = text var <+> rightArrow <+> pretty exp
 
 rightArrow :: Doc
-rightArrow = text " -> " 
+rightArrow = text "->" 
 
 -- | Objects. These serve two roles in the language: 
 -- 
@@ -115,11 +117,12 @@ data Object
    | BlackHole                     -- ^ BLACKHOLE (only during evaluation - not part of the language syntax).
    deriving (Eq, Show)
 
+maybeNest :: Exp -> Doc -> Doc -> Doc
+maybeNest exp d1 d2 = if isNestedExp exp then d1 $$ (nest 3 d2) else d1 <+> d2
+
 instance Pretty Object where
    pretty (Fun vars exp) 
-      = text "FUN" <> parens ((hsep (map text vars) <> rightArrow) `maybeNest` pretty exp)
-      where  
-      maybeNest = if isNestedExp exp then ($$) else (<>)
+      = text "FUN" <> parens (maybeNest exp (hsep (map text vars) <+> rightArrow) (pretty exp))
    pretty (Pap var atoms) = text "PAP" <> parens (text var <+> hsep (map pretty atoms))
    pretty (Con constructor atoms) = text "CON" <> parens (text constructor <+> hsep (map pretty atoms))
    pretty (Thunk exp _stack) = text "THUNK" <> parens (pretty exp)

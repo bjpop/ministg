@@ -55,8 +55,8 @@ main = do
             -- print program
             -- compute arities of known functions
             let arityProgram = runArity program
-            -- run PushEnter arityProgram
-            putStrLn $ render $ prettyProgram $ arityProgram
+            run PushEnter arityProgram
+            -- putStrLn $ render $ prettyProgram $ arityProgram
 
 -- | Parse a ministg program from the contents of a named file.
 parseFile :: FilePath   -- ^ The name of the file.

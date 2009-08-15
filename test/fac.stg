@@ -34,4 +34,4 @@ fac = FUN (x ->
                      in multInt x rec
          });
 
-main = THUNK (fac six) 
+main = THUNK (fac two) 

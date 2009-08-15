@@ -14,80 +14,19 @@
 
 module Ministg.Eval (run, Style(..)) where
 
-import Control.Monad.State
-import Control.Monad.Trans
+import Control.Monad.State (evalStateT, gets)
+import Control.Monad.Trans (liftIO)
 import Data.Map as Map hiding (map)
 import Data.List (foldl')
 import Ministg.AST
 import Ministg.CallStack (CallStack, push, showCallStack)
-
--- | Stack continuations.
-data Continuation
-   = CaseCont [Alt] CallStack -- ^ The alternatives of a case expression.
-   | UpdateCont Var CallStack -- ^ A variable which points to a thunk to be updated.
-   | ArgCont Atom         -- ^ A pending argument (used only by the push-enter model).
-   deriving (Eq, Show)
-
--- | The evaluation stack. 
-type Stack = [Continuation]
--- | The heap (mapping variables to objects).
-type Heap = Map.Map Var Object
--- | State to be threaded through evaluation.
-data EvalState = EvalState { state_unique :: Int, state_callStack :: CallStack }
--- | Eval monad. Combines State and IO.
-type Eval a = StateT EvalState IO a
--- | The style of semantics: push-enter or eval-apply
-data Style
-   = PushEnter
-   | EvalApply
-   deriving (Eq, Show)
-
-initState :: EvalState
-initState = EvalState { state_unique = 0, state_callStack = [] }
-
-initHeap :: Program -> Heap
-initHeap = Map.fromList
-
-initStack :: Stack
-initStack = []
-
-pushCallStack :: String -> Eval ()
-pushCallStack str = do
-   cs <- gets state_callStack
-   modify $ \s -> s { state_callStack = push str cs }
-
-setCallStack :: CallStack -> Eval ()
-setCallStack cs = modify $ \s -> s { state_callStack = cs }
-
--- | Lookup a variable in a heap. If found return the corresponding
--- object, otherwise throw an error (it is a fatal error which can't
--- be recovered from).
-lookupHeap :: Var -> Heap -> Object 
-lookupHeap var heap = 
-   case Map.lookup var heap of
-      Nothing -> error $ "undefined variable: " ++ show var
-      Just object -> object
-
--- | Convenience wrapper for lookupHeap, for atoms which happen to be variables.
-lookupHeapAtom :: Atom -> Heap -> Object
-lookupHeapAtom (Variable var) heap = lookupHeap var heap
-lookupHeapAtom other _heap = error $ "lookupHeapAtom called with non variable " ++ show other
-
--- | Add a new mapping to a heap, or update an existing one.
-updateHeap :: Var -> Object -> Heap -> Heap 
-updateHeap = Map.insert 
+import Ministg.Pretty hiding (Style)
+import Ministg.State
+import Ministg.DumpState (dumpState)
 
 -- | Evaluate a ministg program and cause its effects to happen.
 run :: Style -> Program -> IO ()
 run style decls = evalStateT (evalProgram style $ initHeap decls) initState
-
--- | Generate a new unique variable. Uniqueness is guaranteed by using a
--- "$" prefix, which is not allowed in the concrete sytax of ministg programs.
-freshVar :: Eval Var
-freshVar = do
-   u <- gets state_unique
-   modify $ \s -> s { state_unique = u + 1 }
-   return $ "$" ++ show u
 
 evalProgram :: Style -> Heap -> Eval ()
 evalProgram style heap = do
@@ -138,18 +77,22 @@ printArgs style (a:as) stack heap = do
    (newStack, newHeap) <- printFullResult style a stack heap
    printArgs style as newStack newHeap
 
+{-
+dumpState :: Exp -> Stack -> Heap -> Eval ()
+dumpState exp stack heap = do
+   liftIO $ putStrLn $ render $ prettyState exp stack heap
+
+prettyState :: Exp -> Stack -> Heap -> Doc
+prettyState exp stack heap
+   = text "Expression:" $$ (nest 3 $ pretty exp) $$
+     text "Stack:" $$ (nest 3 $ prettyStack stack)
+-}
+
 -- | Reduce an exression to WHNF (a big step reduction, which may be composed
 -- of one or more small step reductions).
 bigStep :: Style -> Exp -> Stack -> Heap -> Eval (Exp, Stack, Heap) 
 bigStep style exp stack heap = do
-{-
-   cs <- gets state_callStack
-   liftIO $ putStrLn "------------" 
-   liftIO $ print exp
-   liftIO $ putStrLn "------------" 
-   liftIO $ print cs 
-   liftIO $ print stack 
--}
+   dumpState exp stack heap
    result <- smallStep style exp stack heap
    case result of
       -- Nothing more to do, we have reached a WHNF value (or perhaps some error).
