@@ -28,3 +28,7 @@ Executable ministg
       Ministg.Eval
       Ministg.Arity
       Ministg.Pretty
+      Ministg.State
+      Ministg.DumpState
+      Ministg.CallStack
+      
