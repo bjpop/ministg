@@ -28,6 +28,7 @@ module Ministg.State
    , updateHeap
    , freshVar
    , incStepCount
+   , setRule
    )
    where
 
@@ -64,7 +65,13 @@ prettyStack stack = (vcat $ map prettyCont stack)
 type Heap = Map.Map Var Object
 -- | State to be threaded through evaluation.
 
-data EvalState = EvalState { state_unique :: !Int, state_callStack :: CallStack, state_stepCount :: !Int }
+data EvalState 
+   = EvalState 
+     { state_unique :: !Int           -- ^ Unique counter for generating fresh variables.
+     , state_callStack :: CallStack   -- ^ Function call stack (for debugging).
+     , state_stepCount :: !Int        -- ^ How many steps have been executed.
+     , state_lastRule :: !String      -- ^ The most recent evaluation rule applied.
+     }
 -- | Eval monad. Combines State and IO.
 type Eval a = StateT EvalState IO a
 -- | The style of semantics: push-enter or eval-apply
@@ -74,13 +81,24 @@ data Style
    deriving (Eq, Show)
 
 initState :: EvalState
-initState = EvalState { state_unique = 0, state_callStack = [], state_stepCount = 0 }
+initState = 
+   EvalState 
+   { state_unique = 0
+   , state_callStack = []
+   , state_stepCount = 0 
+   , state_lastRule = ""
+   }
 
 initHeap :: Program -> Heap
 initHeap = Map.fromList
 
 initStack :: Stack
 initStack = []
+
+setRule :: String -> Eval ()
+setRule str = do
+   lr <- gets state_lastRule
+   modify $ \s -> s { state_lastRule = str } 
 
 incStepCount :: Eval ()
 incStepCount = do

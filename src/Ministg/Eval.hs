@@ -106,15 +106,18 @@ bigStep style exp stack heap = do
 smallStep :: Style -> Exp -> Stack -> Heap -> Eval (Maybe (Exp, Stack, Heap))
 -- ERROR
 smallStep _anyStyle Error stack heap = do
+   setRule "ERROR"
    cs <- gets state_callStack
    liftIO $ putStrLn $ showCallStack cs
    return Nothing
 -- STACK ANNOTATION
 smallStep style (Stack annotation exp) stack heap = do
+   setRule "STACK"
    pushCallStack annotation
    return $ Just (exp, stack, heap)
 -- LET
 smallStep _anyStyle (Let var object exp) stack heap = do
+   setRule "LET"
    newVar <- freshVar
    callStack <- gets state_callStack
    let annotatedObject = setThunkStack callStack object
@@ -124,25 +127,30 @@ smallStep _anyStyle (Let var object exp) stack heap = do
 -- CASECON
 smallStep _anyStyle (Case (Atom (Variable v)) alts) stack heap
    | Con constructor args <- lookupHeap v heap, 
-     Just (vars, exp) <- exactPatternMatch constructor alts =
+     Just (vars, exp) <- exactPatternMatch constructor alts = do
+        setRule "CASECON"
         return $ Just (subs (mkSubList $ zip vars args) exp, stack, heap)
 -- CASEANY
 smallStep _anyStyle (Case (Atom v) alts) stack heap
    | isLiteral v || isValue (lookupHeapAtom v heap), 
-     Just (x, exp) <- defaultPatternMatch alts =
+     Just (x, exp) <- defaultPatternMatch alts = do
+        setRule "CASEANY"
         return $ Just (subs (mkSub x v) exp, stack, heap)
 -- CASE
 smallStep _anyStyle (Case exp alts) stack heap = do
+   setRule "CASE"
    callStack <- gets state_callStack
    return $ Just (exp, CaseCont alts callStack : stack, heap)
 -- RET 
 smallStep _anyStyle exp@(Atom atom) (CaseCont alts oldCallStack : stackRest) heap
    | isLiteral atom || isValue (lookupHeapAtom atom heap) = do
+        setRule "RET"
         setCallStack oldCallStack
         return $ Just (Case exp alts, stackRest, heap)
 -- THUNK 
 smallStep _anyStyle (Atom (Variable x)) stack heap
    | Thunk exp thunkCallStack <- lookupHeap x heap = do
+        setRule "THUNK"
         let newHeap = updateHeap x BlackHole heap
         oldCallStack <- gets state_callStack
         setCallStack thunkCallStack 
@@ -150,6 +158,7 @@ smallStep _anyStyle (Atom (Variable x)) stack heap
 -- UPDATE
 smallStep _anyStyle atom@(Atom (Variable y)) (UpdateCont x oldCallStack : stackRest) heap
    | object <- lookupHeap y heap, isValue object = do
+        setRule "UPDATE"
         setCallStack oldCallStack
         return $ Just (atom, stackRest, updateHeap x object heap)
 -- KNOWNCALL
@@ -157,21 +166,25 @@ smallStep _anyStyle (FunApp (Just arity) var args) stack heap
    | arity == length args = 
         case lookupHeap var heap of
            Fun params body -> do
+              setRule "KNOWNCALL"
               let newBody = subs (mkSubList $ zip params args) body
               return $ Just (newBody, stack, heap) 
            other -> fail $ "known function " ++ var ++ " bound to non function object: " ++ show other
 -- PRIMOP
 smallStep _anyStyle (PrimApp prim args) stack heap = do
+   setRule "PRIMOP"
    (result, newStack, newHeap) <- evalPrim prim args stack heap
    return $ Just (Atom result, newStack, newHeap)
 -- PUSH
-smallStep PushEnter (FunApp _arity f args) stack heap = 
+smallStep PushEnter (FunApp _arity f args) stack heap = do
+   setRule "PUSH"
    return $ Just (Atom (Variable f), map ArgCont args ++ stack, heap)
 -- FENTER
 smallStep PushEnter (Atom (Variable f)) stack heap
    | Fun vars exp <- lookupHeap f heap,
      argConts <- takeWhile isArgCont stack,
      length vars == length argConts = do
+        setRule "FENTER"
         let argAtoms = [atom | ArgCont atom <- argConts]
         return $ Just (subs (mkSubList $ zip vars argAtoms) exp, stack, heap) 
 -- PAP1
@@ -180,15 +193,19 @@ smallStep PushEnter (Atom (Variable f)) stack heap
      argConts <- takeWhile isArgCont stack,
      length argConts >= 1,
      length vars > length argConts = do
+        setRule "PAP1"
         let argAtoms = [atom | ArgCont atom <- argConts]
         p <- freshVar
         return $ Just (Atom (Variable p), drop (length argConts) stack, updateHeap p (Pap f argAtoms) heap)
 -- PENTER
 smallStep PushEnter (Atom (Variable f)) stack@(ArgCont _ : stackRest) heap
-   | Pap g args <- lookupHeap f heap =
+   | Pap g args <- lookupHeap f heap = do
+        setRule "PENTER"
         return $ Just (Atom (Variable g), map ArgCont args ++ stack, heap) 
 -- NOTHING MORE TO DO
-smallStep _anyStyle _other _stack _heap = return Nothing
+smallStep _anyStyle _other _stack _heap = do
+   setRule "None"
+   return Nothing
 
 -- | Evaluate the application of a primitive function. It is assumed that the
 -- arguments of the primitive are already evaluated. Note: we allow primitives

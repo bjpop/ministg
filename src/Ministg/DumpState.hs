@@ -21,6 +21,7 @@ import Ministg.AST
 import Ministg.CallStack (CallStack, push, showCallStack)
 import Ministg.Pretty as Pretty (pretty, Doc, ($$), nest, render, text)
 import Ministg.State
+import Data.List as List (sortBy)
 
 dumpDir :: FilePath
 dumpDir = "dump"
@@ -34,28 +35,34 @@ dumpState exp stack heap = do
 nextDumpFileName :: Eval FilePath
 nextDumpFileName = do
    count <- gets state_stepCount
-   let filename = dumpDir ++ "/" ++ mkHtmlFileName count 
-   return filename
+   return $ dumpDir ++ "/" ++ mkHtmlFileName count 
 
 makeHtml :: Exp -> Stack -> Heap -> Eval Html 
 makeHtml exp stack heap = do
    count <- gets state_stepCount
-   return (theHead count +++ theBody count)
+   rule <- gets state_lastRule
+   return $ headAndBody count rule
    where
-   theHead count = header << thetitle << ("Step " ++ show count)
-   theBody count = 
-      body << (mainHeading +++ navigation +++ expStackSection +++ heapSection )
+   headAndBody count rule = theHead +++ theBody
       where
-      mainHeading = h1 << ("Step " ++ show count)
-      navigation = paragraph (previous +++ " " +++ next)
-      expStackSection = (h3 << "Stack and Code") +++ expStackTable exp stack
-      heapSection = (h3 << "Heap") +++ heapTable heap 
-      previous = (anchor << "previous") ! [href $ mkHtmlFileName (count - 1)]
-      next = (anchor << "next") ! [href $ mkHtmlFileName (count + 1)]
+      stepStr = "Step " ++ show count
+      theHead = header << thetitle << stepStr 
+      theBody = 
+         body << (mainHeading +++ navigation +++ ruleSection +++ expStackSection +++ heapSection)
+         where
+         mainHeading = h1 << stepStr 
+         navigation = paragraph (previous +++ " " +++ next)
+         previous = if count == 0 then noHtml 
+                       else (anchor << "previous") ! [href $ mkHtmlFileName (count - 1)]
+         next = (anchor << "next") ! [href $ mkHtmlFileName (count + 1)]
+         ruleSection = if null rule then noHtml 
+                          else (h3 << "Most recent rule applied") +++ (paragraph << rule)
+         expStackSection = (h3 << "Stack and Code") +++ expStackTable exp stack
+         heapSection = (h3 << "Heap") +++ heapTable heap 
 
 expStackTable :: Exp -> Stack -> Html
 expStackTable exp stack
-   = simpleTable [border 3, cellpadding 10] [] [headingRow,dataRow]
+   = simpleTable [border 3, cellpadding 10] [thestyle "vertical-align:top"] [headingRow,dataRow]
    where
    headingRow = [stringToHtml "Stack", stringToHtml "Expression"] 
    dataRow = [stackTable stack, pre << expStr]
@@ -64,16 +71,19 @@ expStackTable exp stack
 stackTable :: Stack -> Html
 stackTable [] = noHtml
 stackTable stack
-   = simpleTable [border 1, cellpadding 5, cellspacing 0] [] (map stackRow stack)
+   = simpleTable [border 1, cellpadding 5, cellspacing 0] 
+                 [] (map stackRow stack)
    where
    stackRow :: Continuation -> [Html]
    stackRow cont = [ pre << (render $ pretty cont) ]
 
 heapTable :: Heap -> Html
 heapTable heap
-   = simpleTable [ border 3, cellpadding 5, cellspacing 0] [] (map heapRow mappings)
+   = simpleTable [border 3, cellpadding 5, cellspacing 0] 
+                 [] (headingRow : map heapRow mappings)
    where
-   mappings = Map.toList heap
+   headingRow = [stringToHtml "Variable", stringToHtml "Object"]
+   mappings = List.sortBy (\(x,_) (y,_) -> compare x y) $ Map.toList heap
    heapRow :: (Var, Object) -> [Html]
    heapRow (var, obj) = [pre << var, pre << render (pretty obj)]
 
