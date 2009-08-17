@@ -45,8 +45,12 @@ main = do
             then return userProgram
             else do preludeProgram <- parseFile flags "Prelude.stg"
                     return $ userProgram ++ preludeProgram
+   -- compute arities of known functions
+   let arityProgram = runArity fullProgram
+   dump flags DumpArity (render $ prettyProgram arityProgram) $
+      "The program after arity analysis:\n"
    -- interpret the program
-   run flags fullProgram 
+   run flags arityProgram 
 
 parseFile :: [Flag] -> FilePath -> IO Program
 parseFile flags file = do
@@ -61,11 +65,7 @@ parseFile flags file = do
                dump flags DumpAST (show program) $ "The AST of the program from " ++ file ++ ":\n"
                dump flags DumpParsed (render $ prettyProgram program) $
                     "The parsed program from " ++ file ++ ":\n"
-               -- compute arities of known functions
-               let arityProgram = runArity program
-               dump flags DumpArity (render $ prettyProgram arityProgram) $
-                   "The program from " ++ file ++ " after arity analysis:\n"
-               return arityProgram
+               return program 
 
 dump :: [Flag] -> Dumped -> String -> String -> IO () 
 dump flags dumped str msg = 

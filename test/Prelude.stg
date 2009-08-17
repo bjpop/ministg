@@ -14,11 +14,16 @@ nine = CON(I 9);
 ten = CON(I 10);
 
 multInt = FUN(x y ->
-           case x of
-              { I i -> 
-                  case y of 
-                     { I j -> case mult# i j of
-                                 { x -> let { result = CON (I x) } in result }}});
+   case x of { 
+      I i -> case y of { 
+               I j -> case mult# i j of { 
+                         x -> let { result = CON (I x) } in result }}});
+
+plusInt = FUN(x y ->
+   case x of { 
+      I i -> case y of { 
+               I j -> case plus# i j of { 
+                         x -> let { result = CON (I x) } in result }}});
 
 subInt = FUN(x y ->
            case x of
@@ -59,6 +64,12 @@ take = FUN(n xs ->
                                        rec = THUNK(take m tl);
                                        result = CON(Cons hd rec) } in result }});
 
-head = FUN(xs -> case xs of { Cons hd tl -> hd })
+head = FUN(xs -> case xs of { Cons hd tl -> hd });
 
+foldl = FUN(f acc list ->
+   case list of {
+      Nil -> acc;
+      Cons h t -> let { newAcc = THUNK(f acc h) } in foldl f newAcc t 
+   });
 
+sum = FUN(list -> foldl plusInt zero list) 
