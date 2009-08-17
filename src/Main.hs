@@ -14,6 +14,7 @@
 
 module Main where
 
+import System (exitFailure)
 import Ministg.AST (Program, prettyProgram)
 import Ministg.Parser (parser)
 import Ministg.Lexer (lexer, Token)
@@ -31,26 +32,40 @@ main :: IO ()
 main = do
    args <- getArgs
    (flags, [file]) <- processOptions args
+   -- create trace directory if necessary
+   when (existsFlag flags Trace) $ do
+      let traceDir = getTraceDir flags
+      dirExist <- doesDirectoryExist traceDir
+      unless dirExist $ createDirectory traceDir 
+   -- parse the file
+   userProgram <- parseFile flags file
+   -- optionally include the Prelude
+   fullProgram 
+      <- if existsFlag flags NoPrelude
+            then return userProgram
+            else do preludeProgram <- parseFile flags "Prelude.stg"
+                    return $ userProgram ++ preludeProgram
+   -- interpret the program
+   run flags fullProgram 
+
+parseFile :: [Flag] -> FilePath -> IO Program
+parseFile flags file = do
    tryContents <- safeReadFile file
    case tryContents of
-      Left error -> putStrLn error 
+      Left error -> putStrLn error >> exitFailure
       Right contents -> do
          -- parse the program
-         program <- parseFile file contents 
-         dump flags DumpAST (show program) "The AST of the input program:\n"
-         dump flags DumpParsed (render $ prettyProgram program) 
-                    "The parsed program:\n"
-         -- compute arities of known functions
-         let arityProgram = runArity program
-         dump flags DumpArity (render $ prettyProgram arityProgram) 
-                    "The program after arity analysis:\n"
-         -- create trace directory if necessary
-         when (existsFlag flags Trace) $ do
-             let traceDir = getTraceDir flags
-             dirExist <- doesDirectoryExist traceDir
-             unless dirExist $ createDirectory traceDir 
-         -- interpret the program
-         run flags arityProgram
+         case parser file contents of
+            Left e -> (putStrLn $ "Parse error: " ++ show e) >> exitFailure
+            Right program -> do 
+               dump flags DumpAST (show program) $ "The AST of the program from " ++ file ++ ":\n"
+               dump flags DumpParsed (render $ prettyProgram program) $
+                    "The parsed program from " ++ file ++ ":\n"
+               -- compute arities of known functions
+               let arityProgram = runArity program
+               dump flags DumpArity (render $ prettyProgram arityProgram) $
+                   "The program from " ++ file ++ " after arity analysis:\n"
+               return arityProgram
 
 dump :: [Flag] -> Dumped -> String -> String -> IO () 
 dump flags dumped str msg = 
@@ -59,6 +74,7 @@ dump flags dumped str msg =
       putStrLn str 
       putStr "\n"
 
+{-
 -- | Parse a ministg program from the contents of a named file.
 parseFile :: FilePath   -- ^ The name of the file.
           -> String     -- ^ The contents of the file. 
@@ -67,3 +83,4 @@ parseFile file contents
    = case parser file contents of
        Left e -> (putStrLn $ "Parse error: " ++ show e) >> exitFailure
        Right prog -> return prog 
+-}

@@ -1,0 +1,8 @@
+pzero = CON(Z);
+pone = CON(S pzero);
+list1 = CON(Cons pone nil);
+list2 = CON(Cons pone list1);
+list3 = CON(Cons pone list2);
+list4 = CON(Cons pone list3); 
+consttrue = PAP(const true);
+main = THUNK(map const list4)
