@@ -38,7 +38,7 @@ import Ministg.CallStack (CallStack, push, showCallStack)
 import Ministg.Pretty 
 import Ministg.Options 
    ( Flag (..), defaultMaxSteps, defaultTraceDir
-   , probeFlagsFirst, existsFlag )
+   , probeFlagsFirst, existsFlag, getTraceDir, getMaxTraceSteps )
 
 -- | Stack continuations.
 data Continuation
@@ -71,10 +71,10 @@ data EvalState
    = EvalState 
      { state_unique :: !Int           -- ^ Unique counter for generating fresh variables.
      , state_callStack :: CallStack   -- ^ Function call stack (for debugging).
-     , state_stepCount :: !Int        -- ^ How many steps have been executed.
+     , state_stepCount :: !Integer    -- ^ How many steps have been executed.
      , state_lastRule :: !String      -- ^ The most recent evaluation rule applied.
      , state_trace :: Bool            -- ^ Do we want tracing of evaluation steps? 
-     , state_traceMaxSteps :: Integer -- ^ Maximum number of evaluation steps to trace.
+     , state_maxTraceSteps :: Integer -- ^ Maximum number of evaluation steps to trace.
      , state_traceDir :: String       -- ^ Name of directory to store trace files.
      , state_gc :: Bool               -- ^ Do we want garbage collection?
      }
@@ -90,19 +90,10 @@ initState flags =
    , state_stepCount = 0 
    , state_lastRule = ""
    , state_trace = existsFlag flags Trace 
-   , state_traceMaxSteps = getTraceMaxSteps
-   , state_traceDir = getTraceDir
+   , state_maxTraceSteps = getMaxTraceSteps flags
+   , state_traceDir = getTraceDir flags
    , state_gc = not $ existsFlag flags NoGC 
    }
-   where
-   getTraceMaxSteps = 
-      probeFlagsFirst flags probe defaultMaxSteps 
-      where probe (MaxTraceSteps i) = Just i
-            probe other = Nothing
-   getTraceDir = 
-      probeFlagsFirst flags probe defaultTraceDir
-      where probe (TraceDir d) = Just d
-            probe other = Nothing
 
 initHeap :: Program -> Heap
 initHeap = Map.fromList

@@ -12,6 +12,7 @@
 
 module Ministg.TraceEval (traceEval) where
 
+import Control.Monad (when)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.State (gets)
 import Text.XHtml.Transitional as Html
@@ -23,17 +24,20 @@ import Ministg.Pretty as Pretty (pretty, Doc, ($$), nest, render, text)
 import Ministg.State
 import Data.List as List (sortBy)
 
-traceDir :: FilePath
-traceDir = "trace"
-
 traceEval :: Exp -> Stack -> Heap -> Eval ()
 traceEval exp stack heap = do
-   traceFile <- nextTraceFileName
-   html <- makeHtml exp stack heap
-   liftIO $ writeFile traceFile $ renderHtml html 
+   traceOn <- gets state_trace
+   when traceOn $ do 
+      count <- gets state_stepCount
+      maxSteps <- gets state_maxTraceSteps
+      when (count <= maxSteps) $ do
+         traceFile <- nextTraceFileName 
+         html <- makeHtml exp stack heap
+         liftIO $ writeFile traceFile $ renderHtml html 
 
 nextTraceFileName :: Eval FilePath
 nextTraceFileName = do
+   traceDir <- gets state_traceDir
    count <- gets state_stepCount
    return $ traceDir ++ "/" ++ mkHtmlFileName count 
 
@@ -87,5 +91,5 @@ heapTable heap
    heapRow :: (Var, Object) -> [Html]
    heapRow (var, obj) = [pre << var, pre << render (pretty obj)]
 
-mkHtmlFileName :: Int -> FilePath
+mkHtmlFileName :: Integer -> FilePath
 mkHtmlFileName count = "step" ++ show count ++ ".html"

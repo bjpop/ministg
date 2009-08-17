@@ -17,14 +17,14 @@ module Main where
 import Ministg.AST (Program, prettyProgram)
 import Ministg.Parser (parser)
 import Ministg.Lexer (lexer, Token)
-import Control.Monad (when)
+import Control.Monad (when, unless)
 import System (getArgs, exitFailure)
+import System.Directory (doesDirectoryExist, createDirectory)
 import Ministg.Utils (safeReadFile)
 import Ministg.Arity (runArity)
 import Ministg.Eval (run)
 import Ministg.Pretty (render)
-import Ministg.Options 
-       ( processOptions, Flag (..), Dumped (..), existsFlag )
+import Ministg.Options (processOptions, Flag (..), Dumped (..), existsFlag, getTraceDir)
 
 -- | The main driver of the program.
 main :: IO ()
@@ -44,6 +44,11 @@ main = do
          let arityProgram = runArity program
          dump flags DumpArity (render $ prettyProgram arityProgram) 
                     "The program after arity analysis:\n"
+         -- create trace directory if necessary
+         when (existsFlag flags Trace) $ do
+             let traceDir = getTraceDir flags
+             dirExist <- doesDirectoryExist traceDir
+             unless dirExist $ createDirectory traceDir 
          -- interpret the program
          run flags arityProgram
 
