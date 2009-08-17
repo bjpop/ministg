@@ -12,11 +12,12 @@
 
 module Ministg.TraceEval (traceEval) where
 
+import System.FilePath ((<.>), (</>))
 import Control.Monad (when)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.State (gets)
 import Text.XHtml.Transitional as Html
-import Text.XHtml.Table
+import Text.XHtml.Table hiding ((</>))
 import Data.Map as Map (toList)
 import Ministg.AST
 import Ministg.CallStack (CallStack, push, showCallStack)
@@ -39,7 +40,7 @@ nextTraceFileName :: Eval FilePath
 nextTraceFileName = do
    traceDir <- gets state_traceDir
    count <- gets state_stepCount
-   return $ traceDir ++ "/" ++ mkHtmlFileName count 
+   return $ traceDir </> mkHtmlFileName count 
 
 makeHtml :: Exp -> Stack -> Heap -> Eval Html 
 makeHtml exp stack heap = do
@@ -92,4 +93,4 @@ heapTable heap
    heapRow (var, obj) = [pre << var, pre << render (pretty obj)]
 
 mkHtmlFileName :: Integer -> FilePath
-mkHtmlFileName count = "step" ++ show count ++ ".html"
+mkHtmlFileName count = "step" ++ show count <.> "html"
