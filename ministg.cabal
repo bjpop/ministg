@@ -29,6 +29,6 @@ Executable ministg
       Ministg.Arity
       Ministg.Pretty
       Ministg.State
-      Ministg.DumpState
+      Ministg.TraceEval
       Ministg.CallStack
       Ministg.Options

@@ -22,7 +22,7 @@ import Ministg.AST
 import Ministg.CallStack (CallStack, push, showCallStack)
 import Ministg.Pretty
 import Ministg.State
-import Ministg.DumpState (dumpState)
+import Ministg.TraceEval (traceEval)
 import Ministg.Options as Opts 
        (Flag (..), EvalStyle (..), defaultEvalStyle, probeFlagsFirst)
 
@@ -90,22 +90,11 @@ printArgs style (a:as) stack heap = do
    (newStack, newHeap) <- printFullResult style a stack heap
    printArgs style as newStack newHeap
 
-{-
-dumpState :: Exp -> Stack -> Heap -> Eval ()
-dumpState exp stack heap = do
-   liftIO $ putStrLn $ render $ prettyState exp stack heap
-
-prettyState :: Exp -> Stack -> Heap -> Doc
-prettyState exp stack heap
-   = text "Expression:" $$ (nest 3 $ pretty exp) $$
-     text "Stack:" $$ (nest 3 $ prettyStack stack)
--}
-
 -- | Reduce an exression to WHNF (a big step reduction, which may be composed
 -- of one or more small step reductions).
 bigStep :: EvalStyle -> Exp -> Stack -> Heap -> Eval (Exp, Stack, Heap) 
 bigStep style exp stack heap = do
-   dumpState exp stack heap
+   traceEval exp stack heap
    result <- smallStep style exp stack heap
    incStepCount
    case result of

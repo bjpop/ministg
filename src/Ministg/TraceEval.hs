@@ -1,16 +1,16 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      : Ministg.DumpState
+-- Module      : Ministg.TraceEval
 -- Copyright   : (c) 2009 Bernie Pope 
 -- License     : BSD-style
 -- Maintainer  : bjpop@csse.unimelb.edu.au
 -- Stability   : experimental
 -- Portability : ghc
 --
--- Representation of the state of the ministg evaluator.
+-- Trace the evaluation steps of the interpreter and generate HTML output. 
 -----------------------------------------------------------------------------
 
-module Ministg.DumpState (dumpState) where
+module Ministg.TraceEval (traceEval) where
 
 import Control.Monad.Trans (liftIO)
 import Control.Monad.State (gets)
@@ -23,19 +23,19 @@ import Ministg.Pretty as Pretty (pretty, Doc, ($$), nest, render, text)
 import Ministg.State
 import Data.List as List (sortBy)
 
-dumpDir :: FilePath
-dumpDir = "dump"
+traceDir :: FilePath
+traceDir = "trace"
 
-dumpState :: Exp -> Stack -> Heap -> Eval ()
-dumpState exp stack heap = do
-   dumpFile <- nextDumpFileName
+traceEval :: Exp -> Stack -> Heap -> Eval ()
+traceEval exp stack heap = do
+   traceFile <- nextTraceFileName
    html <- makeHtml exp stack heap
-   liftIO $ writeFile dumpFile $ renderHtml html 
+   liftIO $ writeFile traceFile $ renderHtml html 
 
-nextDumpFileName :: Eval FilePath
-nextDumpFileName = do
+nextTraceFileName :: Eval FilePath
+nextTraceFileName = do
    count <- gets state_stepCount
-   return $ dumpDir ++ "/" ++ mkHtmlFileName count 
+   return $ traceDir ++ "/" ++ mkHtmlFileName count 
 
 makeHtml :: Exp -> Stack -> Heap -> Eval Html 
 makeHtml exp stack heap = do
