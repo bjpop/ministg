@@ -14,49 +14,45 @@
 
 module Main where
 
-import Ministg.AST
-   ( Program, prettyProgram )
-
-import Ministg.Parser
-   ( parser )
-
+import Ministg.AST (Program, prettyProgram)
+import Ministg.Parser (parser)
 import Ministg.Lexer (lexer, Token)
-
-import Control.Monad
-   ( when )
-
-import System
-   ( getArgs
-   , exitFailure
-   )
-
-import Ministg.Utils
-   ( safeReadFile )
-
-import Ministg.Arity
-   ( runArity )
-
-import Ministg.Eval (run, Style(PushEnter, EvalApply))
-
-import Ministg.Pretty ( render )
+import Control.Monad (when)
+import System (getArgs, exitFailure)
+import Ministg.Utils (safeReadFile)
+import Ministg.Arity (runArity)
+import Ministg.Eval (run)
+import Ministg.Pretty (render)
+import Ministg.Options 
+       ( processOptions, Flag (..), Dumped (..), existsFlag )
 
 -- | The main driver of the program.
 main :: IO ()
 main = do
    args <- getArgs
-   when (length args > 0) $ do
-      let file = head args 
-      tryContents <- safeReadFile file
-      case tryContents of
-         Left error -> putStrLn error 
-         Right contents -> do
-            -- parse the program
-            program <- parseFile file contents 
-            -- print program
-            -- compute arities of known functions
-            let arityProgram = runArity program
-            run PushEnter arityProgram
-            -- putStrLn $ render $ prettyProgram $ arityProgram
+   (flags, [file]) <- processOptions args
+   tryContents <- safeReadFile file
+   case tryContents of
+      Left error -> putStrLn error 
+      Right contents -> do
+         -- parse the program
+         program <- parseFile file contents 
+         dump flags DumpAST (show program) "The AST of the input program:\n"
+         dump flags DumpParsed (render $ prettyProgram program) 
+                    "The parsed program:\n"
+         -- compute arities of known functions
+         let arityProgram = runArity program
+         dump flags DumpArity (render $ prettyProgram arityProgram) 
+                    "The program after arity analysis:\n"
+         -- interpret the program
+         run flags arityProgram
+
+dump :: [Flag] -> Dumped -> String -> String -> IO () 
+dump flags dumped str msg = 
+   when (existsFlag flags $ Dump dumped) $ do
+      putStrLn msg 
+      putStrLn str 
+      putStr "\n"
 
 -- | Parse a ministg program from the contents of a named file.
 parseFile :: FilePath   -- ^ The name of the file.
@@ -64,6 +60,5 @@ parseFile :: FilePath   -- ^ The name of the file.
           -> IO Program -- ^ The parsed program.
 parseFile file contents 
    = case parser file contents of
-       Left e -> do putStrLn $ "Parse error: " ++ show e
-                    exitFailure
+       Left e -> (putStrLn $ "Parse error: " ++ show e) >> exitFailure
        Right prog -> return prog 

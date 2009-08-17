@@ -17,7 +17,6 @@ module Ministg.State
    , Heap 
    , EvalState (..)
    , Eval
-   , Style (..)
    , initStack
    , initHeap
    , initState
@@ -36,7 +35,10 @@ import Control.Monad.State
 import Data.Map as Map hiding (map)
 import Ministg.AST
 import Ministg.CallStack (CallStack, push, showCallStack)
-import Ministg.Pretty hiding (Style)
+import Ministg.Pretty 
+import Ministg.Options 
+   ( Flag (..), defaultMaxSteps, defaultTraceDir
+   , probeFlagsFirst, existsFlag )
 
 -- | Stack continuations.
 data Continuation
@@ -63,31 +65,44 @@ prettyStack stack = (vcat $ map prettyCont stack)
 
 -- | The heap (mapping variables to objects).
 type Heap = Map.Map Var Object
--- | State to be threaded through evaluation.
 
+-- | State to be threaded through evaluation.
 data EvalState 
    = EvalState 
      { state_unique :: !Int           -- ^ Unique counter for generating fresh variables.
      , state_callStack :: CallStack   -- ^ Function call stack (for debugging).
      , state_stepCount :: !Int        -- ^ How many steps have been executed.
      , state_lastRule :: !String      -- ^ The most recent evaluation rule applied.
+     , state_trace :: Bool            -- ^ Do we want tracing of evaluation steps? 
+     , state_traceMaxSteps :: Integer -- ^ Maximum number of evaluation steps to trace.
+     , state_traceDir :: String       -- ^ Name of directory to store trace files.
+     , state_gc :: Bool               -- ^ Do we want garbage collection?
      }
+
 -- | Eval monad. Combines State and IO.
 type Eval a = StateT EvalState IO a
--- | The style of semantics: push-enter or eval-apply
-data Style
-   = PushEnter
-   | EvalApply
-   deriving (Eq, Show)
 
-initState :: EvalState
-initState = 
+initState :: [Flag] -> EvalState
+initState flags = 
    EvalState 
    { state_unique = 0
    , state_callStack = []
    , state_stepCount = 0 
    , state_lastRule = ""
+   , state_trace = existsFlag flags Trace 
+   , state_traceMaxSteps = getTraceMaxSteps
+   , state_traceDir = getTraceDir
+   , state_gc = not $ existsFlag flags NoGC 
    }
+   where
+   getTraceMaxSteps = 
+      probeFlagsFirst flags probe defaultMaxSteps 
+      where probe (MaxTraceSteps i) = Just i
+            probe other = Nothing
+   getTraceDir = 
+      probeFlagsFirst flags probe defaultTraceDir
+      where probe (TraceDir d) = Just d
+            probe other = Nothing
 
 initHeap :: Program -> Heap
 initHeap = Map.fromList

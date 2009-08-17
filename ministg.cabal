@@ -31,4 +31,4 @@ Executable ministg
       Ministg.State
       Ministg.DumpState
       Ministg.CallStack
-      
+      Ministg.Options

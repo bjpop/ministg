@@ -12,7 +12,7 @@
 -- "fast curry" paper by Simon Marlow and Simon Peyton Jones.
 -----------------------------------------------------------------------------
 
-module Ministg.Eval (run, Style(..)) where
+module Ministg.Eval (run) where
 
 import Control.Monad.State (evalStateT, gets)
 import Control.Monad.Trans (liftIO)
@@ -20,15 +20,28 @@ import Data.Map as Map hiding (map)
 import Data.List (foldl')
 import Ministg.AST
 import Ministg.CallStack (CallStack, push, showCallStack)
-import Ministg.Pretty hiding (Style)
+import Ministg.Pretty
 import Ministg.State
 import Ministg.DumpState (dumpState)
+import Ministg.Options as Opts 
+       (Flag (..), EvalStyle (..), defaultEvalStyle, probeFlagsFirst)
 
 -- | Evaluate a ministg program and cause its effects to happen.
-run :: Style -> Program -> IO ()
-run style decls = evalStateT (evalProgram style $ initHeap decls) initState
+run :: [Flag] -> Program -> IO ()
+run flags decls = 
+   evalStateT (evalProgram style $ initHeap decls) (initState flags)
+   where
+   style = getEvalStyle flags
 
-evalProgram :: Style -> Heap -> Eval ()
+getEvalStyle :: [Flag] -> EvalStyle
+getEvalStyle flags =
+   probeFlagsFirst flags probe defaultEvalStyle
+   where
+   probe :: Flag -> Maybe EvalStyle
+   probe (Opts.Style style) = Just style 
+   probe other = Nothing 
+
+evalProgram :: EvalStyle -> Heap -> Eval ()
 evalProgram style heap = do
    printFullResult style (Variable "main") initStack heap
    liftIO $ putStr "\n"
@@ -38,7 +51,7 @@ evalProgram style heap = do
 -- of the result is pretty-printed as output. This is akin to the print 
 -- part of a Read-Eval-Print evaluator. Note: this function is not tail-recursive
 -- so it could use a lot of stack space for large answers.
-printFullResult :: Style -> Atom -> Stack -> Heap -> Eval (Stack, Heap) 
+printFullResult :: EvalStyle -> Atom -> Stack -> Heap -> Eval (Stack, Heap) 
 printFullResult style atom stack heap = do
    (newExpr, newStack, newHeap) <- bigStep style (Atom atom) stack heap
    case newExpr of
@@ -70,7 +83,7 @@ printFullResult style atom stack heap = do
          return (newStack, newHeap) 
         
 -- | Recursively print (and hence evaluate) the arguments of a data constructor.
-printArgs :: Style -> [Atom] -> Stack -> Heap -> Eval (Stack, Heap)
+printArgs :: EvalStyle -> [Atom] -> Stack -> Heap -> Eval (Stack, Heap)
 printArgs _style [] stack heap = return (stack, heap)
 printArgs style (a:as) stack heap = do
    liftIO $ putStr " "
@@ -90,7 +103,7 @@ prettyState exp stack heap
 
 -- | Reduce an exression to WHNF (a big step reduction, which may be composed
 -- of one or more small step reductions).
-bigStep :: Style -> Exp -> Stack -> Heap -> Eval (Exp, Stack, Heap) 
+bigStep :: EvalStyle -> Exp -> Stack -> Heap -> Eval (Exp, Stack, Heap) 
 bigStep style exp stack heap = do
    dumpState exp stack heap
    result <- smallStep style exp stack heap
@@ -103,7 +116,7 @@ bigStep style exp stack heap = do
 
 -- | Perform one step of reduction. These equations correspond to the
 -- rules in the operational semantics described in the "fast curry" paper.
-smallStep :: Style -> Exp -> Stack -> Heap -> Eval (Maybe (Exp, Stack, Heap))
+smallStep :: EvalStyle -> Exp -> Stack -> Heap -> Eval (Maybe (Exp, Stack, Heap))
 -- ERROR
 smallStep _anyStyle Error stack heap = do
    setRule "ERROR"
