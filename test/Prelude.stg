@@ -65,6 +65,7 @@ take = FUN(n xs ->
                                        result = CON(Cons hd rec) } in result }});
 
 head = FUN(xs -> case xs of { Cons hd tl -> hd });
+tail = FUN(xs -> case xs of { Cons hd tl -> tl });
 
 foldl = FUN(f acc list ->
    case list of {
@@ -72,4 +73,19 @@ foldl = FUN(f acc list ->
       Cons h t -> let { newAcc = THUNK(f acc h) } in foldl f newAcc t 
    });
 
-sum = FUN(list -> foldl plusInt zero list) 
+# lazy sum with a well-known space leak
+sum = FUN(list -> foldl plusInt zero list);
+
+zipWith = FUN(f list1 list2 ->
+   case list1 of {
+      Nil -> nil;
+      Cons h1 t1 -> 
+         case list2 of {
+            Nil -> nil;
+            Cons h2 t2 ->
+               let { newHead = THUNK(f h1 h2); 
+                     newTail = THUNK(zipWith f t1 t2);
+                     result = CON(Cons newHead newTail)
+               } in result
+         }
+   })

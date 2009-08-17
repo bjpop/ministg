@@ -1,0 +1,9 @@
+# fibs = 1 : 1 : zipWith (+) fibs (tail fibs)
+
+fibs = THUNK(let { tailFibs = THUNK(tail fibs);
+                   zippedList = THUNK(zipWith plusInt fibs tailFibs);
+                   tailList = CON(Cons one zippedList);
+                   list = CON(Cons one tailList)
+             } in list);
+
+main = THUNK(take five fibs)
