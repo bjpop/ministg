@@ -45,6 +45,7 @@ data Continuation
    = CaseCont [Alt] CallStack -- ^ The alternatives of a case expression.
    | UpdateCont Var CallStack -- ^ A variable which points to a thunk to be updated.
    | ArgCont Atom             -- ^ A pending argument (used only by the push-enter model).
+   | ApplyToArgs [Atom]       -- ^ Apply the returned function to these arguments (eval-apply only).
    deriving (Eq, Show)
 
 instance Pretty Continuation where
@@ -53,6 +54,7 @@ instance Pretty Continuation where
    pretty (UpdateCont var _cs)
       = text "upd *" <+> text var
    pretty (ArgCont atom) = text "arg" <+> pretty atom 
+   pretty (ApplyToArgs atoms) = parens (char '*' <+> hsep (map pretty atoms))
 
 -- | The evaluation stack. 
 type Stack = [Continuation]

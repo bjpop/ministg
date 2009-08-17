@@ -177,6 +177,9 @@ smallStep _anyStyle (PrimApp prim args) stack heap = do
    setRule "PRIMOP"
    (result, newStack, newHeap) <- evalPrim prim args stack heap
    return $ Just (Atom result, newStack, newHeap)
+
+-- The push enter specific rules.
+
 -- PUSH
 smallStep PushEnter (FunApp _arity f args) stack heap = do
    setRule "PUSH"
@@ -184,11 +187,13 @@ smallStep PushEnter (FunApp _arity f args) stack heap = do
 -- FENTER
 smallStep PushEnter (Atom (Variable f)) stack heap
    | Fun vars exp <- lookupHeap f heap,
-     argConts <- takeWhile isArgCont stack,
-     length vars == length argConts = do
+     (argConts, restStack) <- span isArgCont stack,
+     length vars <= length argConts = do
         setRule "FENTER"
-        let argAtoms = [atom | ArgCont atom <- argConts]
-        return $ Just (subs (mkSubList $ zip vars argAtoms) exp, stack, heap) 
+        let (enoughArgs, restArgs) = splitAt (length vars) argConts
+        let argAtoms = [atom | ArgCont atom <- enoughArgs]
+        let newStack = restArgs ++ restStack 
+        return $ Just (subs (mkSubList $ zip vars argAtoms) exp, newStack, heap) 
 -- PAP1
 smallStep PushEnter (Atom (Variable f)) stack heap
    | Fun vars exp <- lookupHeap f heap,
@@ -204,6 +209,46 @@ smallStep PushEnter (Atom (Variable f)) stack@(ArgCont _ : stackRest) heap
    | Pap g args <- lookupHeap f heap = do
         setRule "PENTER"
         return $ Just (Atom (Variable g), map ArgCont args ++ stack, heap) 
+
+-- The eval apply rules
+
+-- EXACT
+smallStep EvalApply (FunApp Nothing f args) stack heap
+   | Fun vars exp <- lookupHeap f heap, length args == length vars = do
+        setRule "EXACT"
+        let newExp = subs (mkSubList $ zip vars args) exp
+        return $ Just (newExp, stack, heap)
+-- CALLK
+smallStep EvalApply (FunApp _anyArity f args) stack heap
+   | Fun vars exp <- lookupHeap f heap, length args > length vars = do
+        setRule "CALLK"
+        let (enoughArgs, restArgs) = splitAt (length vars) args
+            newExp = subs (mkSubList $ zip vars enoughArgs) exp
+        return $ Just (newExp, (ApplyToArgs restArgs) : stack, heap)
+-- PAP2
+smallStep EvalApply (FunApp _anyArity f args) stack heap
+   | Fun vars exp <- lookupHeap f heap, length args < length vars = do
+        setRule "PAP2"
+        p <- freshVar
+        let newHeap = updateHeap p (Pap f args) heap
+        return $ Just (Atom (Variable p), stack, newHeap)
+-- TCALL
+-- XXX fix up call stack
+smallStep EvalApply (FunApp Nothing f args) stack heap
+   | Thunk exp thunkCallStack <- lookupHeap f heap = do
+        setRule "TCALL"
+        return $ Just (Atom (Variable f), (ApplyToArgs args) : stack, heap)
+-- PCALL
+smallStep EvalApply (FunApp _anyArity f args) stack heap
+   | Pap g papArgs <- lookupHeap f heap = do
+        setRule "PCALL"
+        return $ Just (FunApp Nothing g (papArgs ++ args), stack, heap)
+-- RETFUN
+smallStep EvalApply (Atom (Variable f)) (ApplyToArgs args : stack) heap
+   | object <- lookupHeap f heap, isFun object || isPap object = do
+        setRule "RETFUN"
+        return $ Just (FunApp Nothing f args, stack, heap)
+
 -- NOTHING MORE TO DO
 smallStep _anyStyle _other _stack _heap = do
    setRule "None"
@@ -248,6 +293,16 @@ isValue (Fun {}) = True
 isValue (Pap {}) = True
 isValue (Con {}) = True
 isValue _other = False
+
+-- | Test for FUN objects
+isFun :: Object -> Bool
+isFun (Fun {}) = True
+isFun other = False
+
+-- | Test for PAP objects
+isPap :: Object -> Bool
+isPap (Pap {}) = True
+isPap other = False
 
 isLiteral :: Atom -> Bool
 isLiteral (Literal {}) = True
