@@ -96,4 +96,4 @@ seq = FUN(x y -> case x of { z -> y });
 forcelist = FUN(list ->
    case list of {
       Nil -> unit;
-      Cons h t -> let { rec = THUNK(forcelist t) } in seq h rec })
+      Cons h t -> let { rec = THUNK(forcelist t) } in seq h rec });
