@@ -1,0 +1,10 @@
+# haskell: main = let x = 1 + 2 in seq x (foo x)
+main = THUNK(let {x = THUNK(plusInt one two);
+                  res = THUNK(foo x)} in seq x res);
+
+# compare with
+# haskell: main = foo (1 + 2)
+# main = THUNK(let {x = THUNK(plusInt one two) } in foo x);
+                  
+
+foo = FUN(x -> three)
