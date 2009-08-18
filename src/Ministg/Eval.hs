@@ -22,9 +22,9 @@ import Ministg.AST
 import Ministg.CallStack (CallStack, push, showCallStack)
 import Ministg.Pretty
 import Ministg.State
-import Ministg.TraceEval (traceEval)
+import Ministg.TraceEval (traceEval, traceEnd)
 import Ministg.Options as Opts 
-       (Flag (..), EvalStyle (..), defaultEvalStyle, probeFlagsFirst)
+       (Flag (..), EvalStyle (..), defaultEvalStyle, probeFlagsFirst, getEvalStyle)
 import Ministg.GC (garbageCollect)
 
 -- | Evaluate a ministg program and cause its effects to happen.
@@ -34,17 +34,10 @@ run flags decls =
    where
    style = getEvalStyle flags
 
-getEvalStyle :: [Flag] -> EvalStyle
-getEvalStyle flags =
-   probeFlagsFirst flags probe defaultEvalStyle
-   where
-   probe :: Flag -> Maybe EvalStyle
-   probe (Opts.Style style) = Just style 
-   probe other = Nothing 
-
 evalProgram :: EvalStyle -> Heap -> Eval ()
 evalProgram style heap = do
    (newExp, _newStack, newHeap) <- bigStep style (Atom (Variable "main")) initStack heap
+   traceEnd
    case newExp of
       Atom (Literal lit) -> liftIO $ putStrLn $ prettyText lit 
       Atom (Variable var) -> liftIO $ putStrLn $ prettyHeapObject newHeap $ lookupHeap var newHeap

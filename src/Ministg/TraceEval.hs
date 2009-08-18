@@ -10,12 +10,13 @@
 -- Trace the evaluation steps of the interpreter and generate HTML output. 
 -----------------------------------------------------------------------------
 
-module Ministg.TraceEval (traceEval) where
+module Ministg.TraceEval (traceEval, traceEnd) where
 
 import System.FilePath ((<.>), (</>))
-import Control.Monad (when)
+import Control.Monad (when, join)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.State (gets)
+import Control.Applicative ((<$>))
 import Text.XHtml.Transitional as Html
 import Text.XHtml.Table hiding ((</>))
 import Data.Map as Map (toList)
@@ -32,15 +33,39 @@ traceEval exp stack heap = do
       count <- gets state_stepCount
       maxSteps <- gets state_maxTraceSteps
       when (count <= maxSteps) $ do
-         traceFile <- nextTraceFileName 
-         html <- makeHtml exp stack heap
-         liftIO $ writeFile traceFile $ renderHtml html 
+         join (writeTraceFile <$> makeHtml exp stack heap)
+      when (count == maxSteps + 1) $ lastTracePage "Maximum trace steps exceeded"
+
+traceEnd :: Eval ()
+traceEnd = do
+   traceOn <- gets state_trace
+   when traceOn $ lastTracePage "The computation has completed"
+   
+lastTracePage :: String -> Eval ()
+lastTracePage msg = join (writeTraceFile <$> lastPage msg) 
+
+writeTraceFile :: Html -> Eval ()
+writeTraceFile html = do
+   traceFile <- nextTraceFileName
+   liftIO $ writeFile traceFile $ renderHtml html 
 
 nextTraceFileName :: Eval FilePath
 nextTraceFileName = do
    traceDir <- gets state_traceDir
    count <- gets state_stepCount
    return $ traceDir </> mkHtmlFileName count 
+
+lastPage :: String -> Eval Html
+lastPage msg = do
+   count <- gets state_stepCount
+   return (theHead +++ theBody count)
+   where
+   theHead = header << thetitle << msg 
+   theBody count 
+      = body << (mainHeading +++ navigation)
+      where
+      mainHeading = h1 << msg 
+      navigation = paragraph ((anchor << "previous") ! [href $ mkHtmlFileName (count - 1)])
 
 makeHtml :: Exp -> Stack -> Heap -> Eval Html 
 makeHtml exp stack heap = do
