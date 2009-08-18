@@ -41,7 +41,7 @@ parser source input
         Right toks -> parse program source toks 
 
 program :: Parser Program
-program = sepBy decl semiColon
+program = sepEndBy decl semiColon <* eof
 
 decl :: Parser Decl
 decl = (,) <$> var <*> (equals *> object)
@@ -109,14 +109,14 @@ greaterThanEquals = const GreaterThanEquals <$> symbol Lex.GreaterThanEquals
 intToBool = const IntToBool <$> symbol Lex.IntToBool
 
 letExp :: Parser Exp
-letExp = flattenLet <$> (symbol Lex.Let *> leftBrace *> sepBy1 decl semiColon <* rightBrace) <*> (symbol Lex.In *> exp)
+letExp = flattenLet <$> (symbol Lex.Let *> leftBrace *> sepEndBy1 decl semiColon <* rightBrace) <*> (symbol Lex.In *> exp)
 
 flattenLet :: [Decl] -> Exp -> Exp
 flattenLet [(var,obj)] body = Let var obj body
 flattenLet ((var,obj):decls) body = Let var obj $ flattenLet decls body 
 
 caseExp :: Parser Exp
-caseExp = Case <$> (symbol Lex.Case *> exp) <*> (symbol Lex.Of *> leftBrace *> sepBy alt semiColon <* rightBrace)
+caseExp = Case <$> (symbol Lex.Case *> exp) <*> (symbol Lex.Of *> leftBrace *> sepEndBy1 alt semiColon <* rightBrace)
 
 atom, atomLiteral, atomVariable :: Parser Atom
 atom = atomLiteral <|> atomVariable
