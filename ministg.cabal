@@ -32,3 +32,4 @@ Executable ministg
       Ministg.TraceEval
       Ministg.CallStack
       Ministg.Options
+      Ministg.GC
