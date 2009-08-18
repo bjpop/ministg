@@ -34,6 +34,7 @@ module Ministg.State
 
 import Control.Monad.State 
 import Data.Map as Map hiding (map)
+import Data.Set as Set hiding (map)
 import Ministg.AST
 import Ministg.CallStack (CallStack, push, showCallStack)
 import Ministg.Pretty 
@@ -48,6 +49,12 @@ data Continuation
    | ArgCont Atom             -- ^ A pending argument (used only by the push-enter model).
    | ApplyToArgs [Atom]       -- ^ Apply the returned function to these arguments (eval-apply only).
    deriving (Eq, Show)
+
+instance FreeVars Continuation where
+   freeVars (CaseCont alts _cs) = freeVars alts
+   freeVars (UpdateCont var _cs) = Set.singleton var
+   freeVars (ArgCont arg) = freeVars arg
+   freeVars (ApplyToArgs args) = freeVars args
 
 instance Pretty Continuation where
    pretty (CaseCont alts _cs) 

@@ -25,6 +25,7 @@ import Ministg.State
 import Ministg.TraceEval (traceEval)
 import Ministg.Options as Opts 
        (Flag (..), EvalStyle (..), defaultEvalStyle, probeFlagsFirst)
+import Ministg.GC (garbageCollect)
 
 -- | Evaluate a ministg program and cause its effects to happen.
 run :: [Flag] -> Program -> IO ()
@@ -43,19 +44,23 @@ getEvalStyle flags =
 
 evalProgram :: EvalStyle -> Heap -> Eval ()
 evalProgram style heap = do
-   (_newExp, _newStack, newHeap) <- bigStep style (Atom (Variable "main")) initStack heap
-   liftIO $ putStrLn $ prettyHeapObject newHeap $ lookupHeap "main" newHeap
+   (newExp, _newStack, newHeap) <- bigStep style (Atom (Variable "main")) initStack heap
+   case newExp of
+      Atom (Literal lit) -> liftIO $ putStrLn $ prettyText lit 
+      Atom (Variable var) -> liftIO $ putStrLn $ prettyHeapObject newHeap $ lookupHeap var newHeap
+      other -> liftIO $ putStrLn $ "Runtime error: result of bigStep is not an atom: " ++ show other 
         
 -- | Reduce an exression to WHNF (a big step reduction, which may be composed
 -- of one or more small step reductions).
 bigStep :: EvalStyle -> Exp -> Stack -> Heap -> Eval (Exp, Stack, Heap) 
 bigStep style exp stack heap = do
-   traceEval exp stack heap
-   result <- smallStep style exp stack heap
+   gcHeap <- garbageCollect exp stack heap
+   traceEval exp stack gcHeap 
+   result <- smallStep style exp stack gcHeap
    incStepCount
    case result of
       -- Nothing more to do, we have reached a WHNF value (or perhaps some error).
-      Nothing -> return (exp, stack, heap)
+      Nothing -> return (exp, stack, gcHeap)
       -- There might be more to do, keep trying.
       Just (newExp, newStack, newHeap) -> bigStep style newExp newStack newHeap
 

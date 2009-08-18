@@ -15,11 +15,18 @@ import Prelude
 -- import qualified Ministg.Lexer as Lex
 import Ministg.CallStack (CallStack)
 import Ministg.Pretty
+import Data.Set as Set hiding (map)
 
 -- | Variables (also known as identifiers).
 type Var = String
 -- | Data constructor names.
 type Constructor = String
+
+class FreeVars t where
+   freeVars :: t -> Set Var
+
+instance FreeVars t => FreeVars [t] where
+   freeVars = Set.unions . map freeVars
 
 -- | Literal integers. These correspond to unboxed integers in the semantics.
 data Literal = Integer Integer 
@@ -37,6 +44,10 @@ data Atom
 instance Pretty Atom where
    pretty (Literal l) = pretty l
    pretty (Variable v) = text v
+
+instance FreeVars Atom where
+   freeVars (Literal {}) = Set.empty
+   freeVars (Variable v) = Set.singleton v
 
 -- | The arity (number of parameters) of a function. It is only known when the function 
 -- being applied is statically known (not lambda bound).
@@ -56,6 +67,18 @@ data Exp
    | Error                      -- ^ Raise an exception.
    | Stack String Exp           -- ^ Like SCC, but just for stacks. (stack str (exp))
    deriving (Eq, Show)
+
+instance FreeVars Exp where
+   freeVars (Atom a) = freeVars a
+   freeVars (FunApp _arity var args) = Set.singleton var `Set.union` freeVars args
+   freeVars (PrimApp prim args) = freeVars args
+   -- Treat this as a letrec, which means that the var is bound (not free) in the object
+   freeVars (Let var object exp) 
+      = Set.delete var (freeVars exp `Set.union` freeVars object) 
+   freeVars (Case exp alts)
+      = freeVars exp `Set.union` freeVars alts
+   freeVars Error = Set.empty
+   freeVars (Stack _str exp) = freeVars exp
 
 instance Pretty Exp where
    pretty (Atom a) = pretty a
@@ -96,6 +119,10 @@ data Alt
    | DefaultAlt Var Exp            -- ^ Default pattern (matches anything) (x -> e).
    deriving (Eq, Show)
 
+instance FreeVars Alt where
+   freeVars (PatAlt constructor args exp) = freeVars exp \\ Set.fromList args
+   freeVars (DefaultAlt var exp) = Set.delete var $ freeVars exp 
+
 instance Pretty Alt where
    pretty (PatAlt con vars exp) = maybeNest exp (text con <+> hsep (map text vars) <+> rightArrow) (pretty exp)
    pretty (DefaultAlt var exp) = text var <+> rightArrow <+> pretty exp
@@ -115,6 +142,13 @@ data Object
    | Thunk Exp CallStack           -- ^ THUNK (e).
    | BlackHole                     -- ^ BLACKHOLE (only during evaluation - not part of the language syntax).
    deriving (Eq, Show)
+
+instance FreeVars Object where
+   freeVars (Fun vars exp) = freeVars exp \\ Set.fromList vars
+   freeVars (Pap var args) = Set.singleton var `Set.union` freeVars args
+   freeVars (Con constructor args) = freeVars args
+   freeVars (Thunk exp callStack) = freeVars exp 
+   freeVars BlackHole = Set.empty
 
 maybeNest :: Exp -> Doc -> Doc -> Doc
 maybeNest exp d1 d2 = if isNestedExp exp then d1 $$ (nest 3 d2) else d1 <+> d2
