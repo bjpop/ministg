@@ -3,4 +3,4 @@ list2 = CON(Cons one list1);
 list3 = CON(Cons zero list2);
 list4 = THUNK(append list3 list3);
 list5 = THUNK(append list4 list4);
-main = THUNK(list5)
+main = THUNK(let { f = THUNK(forcelist list5)} in seq f list5)

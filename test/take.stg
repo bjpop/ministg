@@ -1,2 +1,3 @@
 ones = CON(Cons one ones);
-main = THUNK(take three ones)
+main = THUNK(let { result = THUNK(take three ones);
+                   f = THUNK(forcelist result)} in seq f result )

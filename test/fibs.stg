@@ -6,4 +6,6 @@ fibs = THUNK(let { tailFibs = THUNK(tail fibs);
                    list = CON(Cons one tailList)
              } in list);
 
-main = THUNK(take five fibs)
+main = THUNK( let { result = THUNK(take five fibs);
+                    f = THUNK(forcelist result)
+                  } in seq f result)

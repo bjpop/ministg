@@ -5,4 +5,6 @@ list2 = CON(Cons pone list1);
 list3 = CON(Cons pone list2);
 list4 = CON(Cons pone list3); 
 consttrue = PAP(const true);
-main = THUNK(map const list4)
+main = THUNK( let { result = THUNK(map const list4);
+                    f = THUNK(forcelist result) 
+                  } in seq f result )

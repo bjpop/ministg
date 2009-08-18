@@ -46,7 +46,6 @@ prettyArity :: FunArity -> Doc
 prettyArity Nothing = text "_?" 
 prettyArity (Just i) = text "_" <> int i
 
-
 -- | Expressions.
 data Exp 
    = Atom Atom                  -- ^ Atomic expressions (literals, variables).

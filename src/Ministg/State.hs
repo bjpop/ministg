@@ -28,6 +28,7 @@ module Ministg.State
    , freshVar
    , incStepCount
    , setRule
+   , prettyHeapObject
    )
    where
 
@@ -146,3 +147,17 @@ freshVar = do
    u <- gets state_unique
    modify $ \s -> s { state_unique = u + 1 }
    return $ "$" ++ show u
+
+-- XXX not very good for printing large objects, nonetheless it is lazy.
+prettyHeapObject :: Heap -> Object -> String 
+prettyHeapObject heap (Con constructor args)
+   | length args == 0 = constructor
+   | otherwise = "(" ++ unwords (constructor : map (prettyHeapAtom heap) args) ++ ")"
+prettyHeapObject _heap (Fun {}) = "<function>"
+prettyHeapObject _heap (Pap {}) = "<pap>"
+prettyHeapObject _heap (Thunk {}) = "<thunk>"
+prettyHeapObject _heap BlackHole = "<blackhole>"
+
+prettyHeapAtom :: Heap -> Atom -> String 
+prettyHeapAtom heap (Literal (Integer i)) = show i
+prettyHeapAtom heap (Variable var) = prettyHeapObject heap $ lookupHeap var heap

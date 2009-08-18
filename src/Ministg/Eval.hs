@@ -43,53 +43,9 @@ getEvalStyle flags =
 
 evalProgram :: EvalStyle -> Heap -> Eval ()
 evalProgram style heap = do
-   printFullResult style (Variable "main") initStack heap
-   liftIO $ putStr "\n"
-
--- | Top-level driver for evaluating a program. This ensures that the whole
--- top-level result is evaluated to normal form (not just WHNF). The value
--- of the result is pretty-printed as output. This is akin to the print 
--- part of a Read-Eval-Print evaluator. Note: this function is not tail-recursive
--- so it could use a lot of stack space for large answers.
-printFullResult :: EvalStyle -> Atom -> Stack -> Heap -> Eval (Stack, Heap) 
-printFullResult style atom stack heap = do
-   (newExpr, newStack, newHeap) <- bigStep style (Atom atom) stack heap
-   case newExpr of
-      Atom newAtom -> case newAtom of
-         (Literal (Integer i)) -> do
-            liftIO $ putStr $ show i 
-            return (newStack, newHeap)
-         (Variable v) -> do
-            case lookupHeap v newHeap of
-               -- We don't look inside functions or paps. XXX For debugging purposes it
-               -- might be nicer to print more than "<function>".
-               Fun {} -> do
-                  liftIO $ putStr "<function>"
-                  return (newStack, newHeap)
-               Pap {} -> do
-                  liftIO $ putStr "<pap>"
-                  return (newStack, newHeap)
-               Con constructor args -> do
-                  liftIO $ putStr $ "(" ++ constructor
-                  -- print the arguments of the constructor.
-                  -- XXX Note the lack of tail recursion.
-                  (finalStack, finalHeap) <- printArgs style args newStack newHeap 
-                  liftIO $ putStr ")"
-                  return (finalStack, finalHeap)
-               other -> error $ show other
-      otherExpression -> do
-         liftIO $ putStrLn "Program terminated abnormally"
-         -- liftIO $ print otherExpression
-         return (newStack, newHeap) 
+   (_newExp, _newStack, newHeap) <- bigStep style (Atom (Variable "main")) initStack heap
+   liftIO $ putStrLn $ prettyHeapObject newHeap $ lookupHeap "main" newHeap
         
--- | Recursively print (and hence evaluate) the arguments of a data constructor.
-printArgs :: EvalStyle -> [Atom] -> Stack -> Heap -> Eval (Stack, Heap)
-printArgs _style [] stack heap = return (stack, heap)
-printArgs style (a:as) stack heap = do
-   liftIO $ putStr " "
-   (newStack, newHeap) <- printFullResult style a stack heap
-   printArgs style as newStack newHeap
-
 -- | Reduce an exression to WHNF (a big step reduction, which may be composed
 -- of one or more small step reductions).
 bigStep :: EvalStyle -> Exp -> Stack -> Heap -> Eval (Exp, Stack, Heap) 

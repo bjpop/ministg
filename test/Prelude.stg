@@ -1,3 +1,4 @@
+unit = CON(Unit);
 true = CON(True);
 false = CON(False);
 nil = CON(Nil);
@@ -88,4 +89,11 @@ zipWith = FUN(f list1 list2 ->
                      result = CON(Cons newHead newTail)
                } in result
          }
-   })
+   });
+
+seq = FUN(x y -> case x of { z -> y });
+
+forcelist = FUN(list ->
+   case list of {
+      Nil -> unit;
+      Cons h t -> let { rec = THUNK(forcelist t) } in seq h rec })
