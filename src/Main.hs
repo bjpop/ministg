@@ -31,7 +31,7 @@ import Ministg.Options (processOptions, Flag (..), Dumped (..), existsFlag, getT
 main :: IO ()
 main = do
    args <- getArgs
-   (flags, [file]) <- processOptions args
+   (flags, file) <- processOptions args
    -- create trace directory if necessary
    when (existsFlag flags Trace) $ do
       let traceDir = getTraceDir flags
