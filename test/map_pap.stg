@@ -1,0 +1,8 @@
+# in Haskell: main = head (map const [7,2,1]) 10 
+
+list1 = CON(Cons one nil);
+list2 = CON(Cons two list1);
+list3 = CON(Cons seven list2);
+main = THUNK(let { mc = THUNK(map const list3);
+                   constSeven = THUNK(head mc);
+                 } in constSeven ten);

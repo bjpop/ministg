@@ -1,0 +1,2 @@
+# this should crash with a blackhole.
+main = THUNK(main);

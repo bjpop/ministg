@@ -1,0 +1,4 @@
+list1 = CON(Cons one nil);
+list2 = CON(Cons error list1);
+list3 = CON(Cons three list2);
+main = THUNK(sum list3);
