@@ -33,3 +33,4 @@ Executable ministg
       Ministg.CallStack
       Ministg.Options
       Ministg.GC
+      Ministg.Annotate
