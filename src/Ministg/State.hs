@@ -89,6 +89,7 @@ data EvalState
      , state_maxTraceSteps :: Integer -- ^ Maximum number of evaluation steps to trace.
      , state_traceDir :: String       -- ^ Name of directory to store trace files.
      , state_gc :: Bool               -- ^ Do we want garbage collection?
+     , state_traceCallStack :: Bool   -- ^ Do we want the call stack shown in the trace?
      }
 
 -- | Eval monad. Combines State and IO.
@@ -105,6 +106,7 @@ initState flags =
    , state_maxTraceSteps = getMaxTraceSteps flags
    , state_traceDir = getTraceDir flags
    , state_gc = not $ existsFlag flags NoGC 
+   , state_traceCallStack = existsFlag flags CallStack
    }
 
 initHeap :: Program -> Heap

@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -XPatternGuards #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      : Ministg.TraceEval
@@ -72,9 +73,11 @@ makeHtml exp stack heap = do
    count <- gets state_stepCount
    rule <- gets state_lastRule
    callStack <- gets state_callStack
-   return $ headAndBody count rule callStack
+   wantCallStack <- gets state_traceCallStack
+   return $ headAndBody count rule 
+               (if wantCallStack then Just callStack else Nothing) 
    where
-   headAndBody count rule callStack = theHead +++ theBody
+   headAndBody count rule maybeCallStack = theHead +++ theBody
       where
       stepStr = "Step " ++ show count
       theHead = header << thetitle << stepStr 
@@ -88,16 +91,22 @@ makeHtml exp stack heap = do
          next = (anchor << "next") ! [href $ mkHtmlFileName (count + 1)]
          ruleSection = if null rule then noHtml 
                           else (h3 << "Most recent rule applied") +++ (paragraph << rule)
-         expStackSection = (h3 << "Stack and Code") +++ expStackCallTable exp stack callStack
+         expStackSection = (h3 << "Stack and Code") +++ expStackCallTable exp stack maybeCallStack 
          heapSection = (h3 << "Heap") +++ heapTable heap 
 
-expStackCallTable :: Exp -> Stack -> CallStack -> Html
-expStackCallTable exp stack callStack
-   = simpleTable [border 3, cellpadding 10] [thestyle "vertical-align:top"] [headingRow,dataRow]
+expStackCallTable :: Exp -> Stack -> Maybe CallStack -> Html
+expStackCallTable exp stack maybeCallStack 
+   = simpleTable [border 3, cellpadding 10] [thestyle "vertical-align:top"] rows 
    where
-   headingRow = [stringToHtml "Stack", stringToHtml "Expression", stringToHtml "Call Stack"] 
-   dataRow = [stackTable stack, pre << expStr, callStackTable callStack]
-   expStr = render $ pretty exp
+   rows | Just callStack <- maybeCallStack =
+             [stackExprHeading ++ callStackHeading, stackExprData ++ callStackData callStack]
+        | otherwise = [stackExprHeading, stackExprData] 
+        where
+        stackExprHeading = [stringToHtml "Stack", stringToHtml "Expression"]
+        stackExprData = [stackTable stack, pre << expStr]
+        callStackHeading = [stringToHtml "Call Stack"]
+        callStackData callStack = [callStackTable callStack]
+        expStr = render $ pretty exp
 
 stackTable :: Stack -> Html
 stackTable [] = noHtml
