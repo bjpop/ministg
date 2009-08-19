@@ -64,7 +64,6 @@ data Exp
    | PrimApp Prim [Atom]        -- ^ Saturated primitive application (op a_1 ... a_n, n >= 1).
    | Let Var Object Exp         -- ^ Let declaration. 
    | Case Exp [Alt]             -- ^ Case expression.
-   | Error                      -- ^ Raise an exception.
    | Stack String Exp           -- ^ Like SCC, but just for stacks. (stack str (exp))
    deriving (Eq, Show)
 
@@ -77,7 +76,6 @@ instance FreeVars Exp where
       = Set.delete var (freeVars exp `Set.union` freeVars object) 
    freeVars (Case exp alts)
       = freeVars exp `Set.union` freeVars alts
-   freeVars Error = Set.empty
    freeVars (Stack _str exp) = freeVars exp
 
 instance Pretty Exp where
@@ -96,7 +94,6 @@ instance Pretty Exp where
       text "case" <+> pretty exp <+> text "of {" $$ 
       nest 3 (vcat (punctuate semi (map pretty alts))) $$
       rbrace
-   pretty Error = text "error"
    pretty (Stack annotation exp) = 
       maybeNest exp (text "stack" <+> doubleQuotes (text annotation)) (parens (pretty exp))
 
@@ -141,6 +138,7 @@ data Object
    | Con Constructor [Atom]        -- ^ Data constructor application (CON (C a_1 ... a_n)).
    | Thunk Exp CallStack           -- ^ THUNK (e).
    | BlackHole                     -- ^ BLACKHOLE (only during evaluation - not part of the language syntax).
+   | Error                         -- ^ Raise an exception.
    deriving (Eq, Show)
 
 instance FreeVars Object where
@@ -149,6 +147,7 @@ instance FreeVars Object where
    freeVars (Con constructor args) = freeVars args
    freeVars (Thunk exp callStack) = freeVars exp 
    freeVars BlackHole = Set.empty
+   freeVars Error = Set.empty
 
 maybeNest :: Exp -> Doc -> Doc -> Doc
 maybeNest exp d1 d2 = if isNestedExp exp then d1 $$ (nest 3 d2) else d1 <+> d2
@@ -161,6 +160,7 @@ instance Pretty Object where
    pretty (Thunk exp callStack) 
       = text "THUNK" <> parens (pretty exp) $$ (nest 3 (prettyCallStack callStack))
    pretty BlackHole = text "BLACKHOLE"
+   pretty Error = text "ERROR"
 
 -- | A top-level declaration (f = obj).
 type Decl = (Var, Object)

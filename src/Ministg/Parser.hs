@@ -52,11 +52,7 @@ exp = funCallOrVar <|>
       primApp <|> 
       letExp <|> 
       caseExp <|>
-      errorCall <|>
       stack
-
-errorCall :: Parser Exp
-errorCall = const Error <$> symbol Lex.Error
 
 stack :: Parser Exp
 stack = Stack <$> (symbol Lex.Stack *> quotedString) <*> (leftParen *> exp <* rightParen)
@@ -136,13 +132,14 @@ defaultAlt :: Parser Alt
 defaultAlt = DefaultAlt <$> var <*> (rightArrow *> exp)
 
 object :: Parser Object
-object = fun <|> pap <|> con <|> thunk
+object = fun <|> pap <|> con <|> thunk <|> errorObj
 
-fun, pap, con, thunk :: Parser Object
+fun, pap, con, thunk, errorObj  :: Parser Object
 fun = Fun <$> (symbol Lex.Fun *> leftParen *> many1 var) <*> (rightArrow *> exp <* rightParen)
 pap = Pap <$> (symbol Lex.Pap *> leftParen *> var) <*> (many1 atom <* rightParen)
 con = Con <$> (symbol Lex.Con *> leftParen *> constructor) <*> (many atom <* rightParen)
 thunk = Thunk <$> (symbol Lex.Thunk *> leftParen *> exp <* rightParen) <*> pure []
+errorObj = const Error <$> symbol Lex.Error
 
 var :: Parser Var 
 var = tokenParser getIdent

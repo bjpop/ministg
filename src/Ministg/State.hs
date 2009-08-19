@@ -168,6 +168,7 @@ prettyHeapObject _heap (Fun {}) = "<function>"
 prettyHeapObject _heap (Pap {}) = "<pap>"
 prettyHeapObject _heap (Thunk {}) = "<thunk>"
 prettyHeapObject _heap BlackHole = "<blackhole>"
+prettyHeapObject _heap Error = "<error>"
 
 prettyHeapAtom :: Heap -> Atom -> String 
 prettyHeapAtom heap (Literal (Integer i)) = show i

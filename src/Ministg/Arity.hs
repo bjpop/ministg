@@ -75,7 +75,8 @@ instance Arity Exp where
       | otherwise = Let var <$> arity object <*> local (clearVars [var]) (arity exp)
    arity (Case exp alts) = Case <$> arity exp <*> mapM arity alts 
    arity (Stack annotation exp) = Stack annotation <$> arity exp
-   arity other = return other
+   arity exp@(Atom {}) = return exp
+   arity exp@(PrimApp {}) = return exp
 
 -- | Remove a list of variables from an ArityMap.
 clearVars :: [Var] -> ArityMap -> ArityMap

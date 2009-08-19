@@ -143,7 +143,7 @@ keyword =
    key "gt#"   GreaterThan <|>
    key "gte#"  GreaterThanEquals <|>
    key "intToBool#" IntToBool <|>
-   key "error" Error <|>
+   key "ERROR" Error <|>
    key "stack" Stack
    where
    key :: String -> Symbol -> Parser Token

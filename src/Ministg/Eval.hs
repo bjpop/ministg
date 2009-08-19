@@ -38,10 +38,17 @@ evalProgram :: EvalStyle -> Heap -> Eval ()
 evalProgram style heap = do
    (newExp, _newStack, newHeap) <- bigStep style (Atom (Variable "main")) initStack heap
    traceEnd
-   case newExp of
-      Atom (Literal lit) -> liftIO $ putStrLn $ prettyText lit 
-      Atom (Variable var) -> liftIO $ putStrLn $ prettyHeapObject newHeap $ lookupHeap var newHeap
-      other -> liftIO $ putStrLn $ "Runtime error: result of bigStep is not an atom: " ++ show other 
+   str <- case newExp of
+             Atom (Literal lit) -> return $ prettyText lit 
+             Atom (Variable var) -> do
+                let object = lookupHeap var newHeap
+                case object of
+                   Error -> do
+                      cs <- gets state_callStack
+                      return $ unlines ["Exception raised! Stack dump:", showCallStack cs]
+                   other -> return $ prettyHeapObject newHeap $ lookupHeap var newHeap
+             other -> return $ "Runtime error: result of bigStep is not an atom: " ++ show other 
+   liftIO $ putStrLn str
         
 -- | Reduce an exression to WHNF (a big step reduction, which may be composed
 -- of one or more small step reductions).
@@ -60,12 +67,6 @@ bigStep style exp stack heap = do
 -- | Perform one step of reduction. These equations correspond to the
 -- rules in the operational semantics described in the "fast curry" paper.
 smallStep :: EvalStyle -> Exp -> Stack -> Heap -> Eval (Maybe (Exp, Stack, Heap))
--- ERROR
-smallStep _anyStyle Error stack heap = do
-   setRule "ERROR"
-   cs <- gets state_callStack
-   liftIO $ putStrLn $ showCallStack cs
-   return Nothing
 -- STACK ANNOTATION
 smallStep style (Stack annotation exp) stack heap = do
    setRule "STACK"
@@ -308,7 +309,7 @@ instance Substitute Atom where
       case Map.lookup var s of
          Nothing -> v
          Just atom -> atom 
-   subs _s l@(Literal _) = l
+   subs _s l@(Literal {}) = l
 
 instance Substitute Exp where
    subs s (Atom a) = Atom $ subs s a
@@ -323,7 +324,6 @@ instance Substitute Exp where
       where
       newSub = removeVars [var] s
    subs s (Case exp alts) = Case (subs s exp) (subs s alts)
-   subs _s Error = Error
    subs s (Stack str e) = Stack str $ subs s e
 
 instance Substitute Alt where
@@ -339,4 +339,5 @@ instance Substitute Object where
       = Pap (subsVar s var) (subs s atoms)
    subs s (Con constructor atoms) = Con constructor $ subs s atoms
    subs s (Thunk exp cs) = Thunk (subs s exp) cs
-   subs s BlackHole = BlackHole
+   subs _s BlackHole = BlackHole
+   subs _s Error = Error
