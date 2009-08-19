@@ -13,7 +13,7 @@ module Ministg.AST where
 
 import Prelude 
 -- import qualified Ministg.Lexer as Lex
-import Ministg.CallStack (CallStack)
+import Ministg.CallStack (CallStack, prettyCallStack)
 import Ministg.Pretty
 import Data.Set as Set hiding (map)
 
@@ -158,7 +158,8 @@ instance Pretty Object where
       = text "FUN" <> parens (maybeNest exp (hsep (map text vars) <+> rightArrow) (pretty exp))
    pretty (Pap var atoms) = text "PAP" <> parens (text var <+> hsep (map pretty atoms))
    pretty (Con constructor atoms) = text "CON" <> parens (text constructor <+> hsep (map pretty atoms))
-   pretty (Thunk exp _stack) = text "THUNK" <> parens (pretty exp)
+   pretty (Thunk exp callStack) 
+      = text "THUNK" <> parens (pretty exp) $$ (nest 3 (prettyCallStack callStack))
    pretty BlackHole = text "BLACKHOLE"
 
 -- | A top-level declaration (f = obj).

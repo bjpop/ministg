@@ -36,7 +36,7 @@ import Control.Monad.State
 import Data.Map as Map hiding (map)
 import Data.Set as Set hiding (map)
 import Ministg.AST
-import Ministg.CallStack (CallStack, push, showCallStack)
+import Ministg.CallStack (CallStack, push, prettyCallStack)
 import Ministg.Pretty 
 import Ministg.Options 
    ( Flag (..), defaultMaxSteps, defaultTraceDir
@@ -57,10 +57,12 @@ instance FreeVars Continuation where
    freeVars (ApplyToArgs args) = freeVars args
 
 instance Pretty Continuation where
-   pretty (CaseCont alts _cs) 
-      = text "case *" <+> braces (vcat (punctuate semi (map pretty alts)))
-   pretty (UpdateCont var _cs)
-      = text "upd *" <+> text var
+   pretty (CaseCont alts callStack) 
+      = text "case *" <+> braces (vcat (punctuate semi (map pretty alts))) $$
+        nest 3 (prettyCallStack callStack)
+   pretty (UpdateCont var callStack) 
+      = text "upd *" <+> text var $$
+        nest 3 (prettyCallStack callStack)
    pretty (ArgCont atom) = text "arg" <+> pretty atom 
    pretty (ApplyToArgs atoms) = parens (char '*' <+> hsep (map pretty atoms))
 

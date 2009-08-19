@@ -71,9 +71,10 @@ makeHtml :: Exp -> Stack -> Heap -> Eval Html
 makeHtml exp stack heap = do
    count <- gets state_stepCount
    rule <- gets state_lastRule
-   return $ headAndBody count rule
+   callStack <- gets state_callStack
+   return $ headAndBody count rule callStack
    where
-   headAndBody count rule = theHead +++ theBody
+   headAndBody count rule callStack = theHead +++ theBody
       where
       stepStr = "Step " ++ show count
       theHead = header << thetitle << stepStr 
@@ -87,15 +88,15 @@ makeHtml exp stack heap = do
          next = (anchor << "next") ! [href $ mkHtmlFileName (count + 1)]
          ruleSection = if null rule then noHtml 
                           else (h3 << "Most recent rule applied") +++ (paragraph << rule)
-         expStackSection = (h3 << "Stack and Code") +++ expStackTable exp stack
+         expStackSection = (h3 << "Stack and Code") +++ expStackCallTable exp stack callStack
          heapSection = (h3 << "Heap") +++ heapTable heap 
 
-expStackTable :: Exp -> Stack -> Html
-expStackTable exp stack
+expStackCallTable :: Exp -> Stack -> CallStack -> Html
+expStackCallTable exp stack callStack
    = simpleTable [border 3, cellpadding 10] [thestyle "vertical-align:top"] [headingRow,dataRow]
    where
-   headingRow = [stringToHtml "Stack", stringToHtml "Expression"] 
-   dataRow = [stackTable stack, pre << expStr]
+   headingRow = [stringToHtml "Stack", stringToHtml "Expression", stringToHtml "Call Stack"] 
+   dataRow = [stackTable stack, pre << expStr, callStackTable callStack]
    expStr = render $ pretty exp
 
 stackTable :: Stack -> Html
@@ -106,6 +107,15 @@ stackTable stack
    where
    stackRow :: Continuation -> [Html]
    stackRow cont = [ pre << (render $ pretty cont) ]
+
+callStackTable :: CallStack -> Html
+callStackTable [] = noHtml
+callStackTable stack
+   = simpleTable [border 1, cellpadding 5, cellspacing 0] 
+                 [] (map stackRow stack)
+   where
+   stackRow :: String -> [Html]
+   stackRow str = [ pre << str ]
 
 heapTable :: Heap -> Html
 heapTable heap

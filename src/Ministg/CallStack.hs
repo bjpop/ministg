@@ -10,7 +10,9 @@
 -- Stack of program annotations. Simulate a call stack.
 -----------------------------------------------------------------------------
 
-module Ministg.CallStack (CallStack, push, showCallStack) where
+module Ministg.CallStack (CallStack, push, showCallStack, prettyCallStack) where
+
+import Ministg.Pretty
 
 type CallStack = [String]
 
@@ -19,3 +21,7 @@ push = (:)
 
 showCallStack :: CallStack -> String
 showCallStack = unlines
+
+prettyCallStack :: CallStack -> Doc
+prettyCallStack [] = empty
+prettyCallStack stack = char '<' <> hcat (punctuate (text "|") (map text stack)) <> char '>'
