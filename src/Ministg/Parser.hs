@@ -44,7 +44,7 @@ program :: Parser Program
 program = Program <$> sepEndBy decl semiColon <* eof
 
 decl :: Parser Decl
-decl = (,) <$> var <*> (equals *> object)
+decl = Decl <$> var <*> (equals *> object)
 
 exp :: Parser Exp
 exp = funCallOrVar <|> 
@@ -108,8 +108,8 @@ letExp :: Parser Exp
 letExp = flattenLet <$> (symbol Lex.Let *> leftBrace *> sepEndBy1 decl semiColon <* rightBrace) <*> (symbol Lex.In *> exp)
 
 flattenLet :: [Decl] -> Exp -> Exp
-flattenLet [(var,obj)] body = Let var obj body
-flattenLet ((var,obj):decls) body = Let var obj $ flattenLet decls body 
+flattenLet [Decl var obj] body = Let var obj body
+flattenLet (Decl var obj : decls) body = Let var obj $ flattenLet decls body 
 
 caseExp :: Parser Exp
 caseExp = Case <$> (symbol Lex.Case *> exp) <*> (symbol Lex.Of *> leftBrace *> sepEndBy1 alt semiColon <* rightBrace)

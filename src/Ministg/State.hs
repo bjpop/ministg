@@ -110,7 +110,10 @@ initState flags =
    }
 
 initHeap :: Program -> Heap
-initHeap (Program decls) = Map.fromList decls
+initHeap (Program decls) = Map.fromList $ map declToPair decls
+   where
+   declToPair :: Decl -> (Var, Object)
+   declToPair (Decl var obj) = (var, obj)
 
 initStack :: Stack
 initStack = []

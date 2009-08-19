@@ -86,7 +86,7 @@ instance Pretty Exp where
       = maybeNest (text "let {") prettyDecls (rbrace <+> text "in" <+> pretty inExp)
       where
       (decls, inExp) = unflattenLet letExp
-      prettyDecls = vcat (punctuate semi (map prettyDecl decls))
+      prettyDecls = vcat (punctuate semi (map pretty decls))
       maybeNest letPart declPart inPart
          | length decls < 2 = letPart <+> declPart <+> inPart
          | otherwise = letPart $$ (nest 3 declPart) $$ inPart
@@ -107,7 +107,7 @@ unflattenLet :: Exp -> ([Decl], Exp)
 unflattenLet exp = unflattenLetAcc exp []
    where
    unflattenLetAcc :: Exp -> [Decl] -> ([Decl], Exp)
-   unflattenLetAcc (Let var obj exp) ds = unflattenLetAcc exp ((var,obj):ds) 
+   unflattenLetAcc (Let var obj exp) ds = unflattenLetAcc exp (Decl var obj : ds) 
    unflattenLetAcc exp ds = (reverse ds, exp) 
 
 -- | Case alternatives (the right-hand-sides of case branches).
@@ -163,16 +163,18 @@ instance Pretty Object where
    pretty Error = text "ERROR"
 
 -- | A top-level declaration (f = obj).
-type Decl = (Var, Object)
+data Decl = Decl Var Object
+   deriving Show
 
-prettyDecl :: Decl -> Doc
-prettyDecl (var, obj) = text var <+> equals <+> pretty obj
+instance Pretty Decl where
+   pretty (Decl var obj) = text var <+> equals <+> pretty obj
+
 -- | A whole program.
 newtype Program = Program [Decl]
    deriving Show
 
 instance Pretty Program where
-   pretty (Program decls) = vcat (punctuate semi (map prettyDecl decls))
+   pretty (Program decls) = vcat (punctuate semi (map pretty decls))
 
 -- | Primitive operators.
 data Prim

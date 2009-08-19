@@ -51,7 +51,7 @@ instance Arity Program where
    arity (Program decls) = Program <$> (local (Map.union as) $ mapM arity decls)
       where
       as :: ArityMap
-      as = Map.fromList [ (var, countArgs obj) | (var, obj) <- decls, isFun obj]
+      as = Map.fromList [ (var, countArgs obj) | Decl var obj <- decls, isFun obj]
 
 -- | True if an object is a funciton (FUN).
 isFun :: Object -> Bool
@@ -64,7 +64,7 @@ countArgs (Fun args _) = length args
 countArgs other = error $ "countArgs called on non function: " ++ show other
 
 instance Arity Decl where
-   arity (var, object) = (,) var <$> arity object
+   arity (Decl var object) = Decl var <$> arity object
 
 instance Arity Exp where
    arity (FunApp _oldArity var args) = 
