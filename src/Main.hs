@@ -44,7 +44,7 @@ main = do
       <- if existsFlag flags NoPrelude
             then return userProgram
             else do preludeProgram <- parseFile flags "Prelude.stg"
-                    return $ userProgram ++ preludeProgram
+                    return $ preludeProgram ++ userProgram
    -- compute arities of known functions
    let arityProgram = runArity fullProgram
    dump flags DumpArity (render $ prettyProgram arityProgram) $
