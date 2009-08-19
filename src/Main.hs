@@ -26,6 +26,7 @@ import Ministg.Arity (runArity)
 import Ministg.Eval (run)
 import Ministg.Pretty (prettyText)
 import Ministg.Options (processOptions, Flag (..), Dumped (..), existsFlag, getTraceDir)
+import Ministg.Annotate
 
 -- | The main driver of the program.
 main :: IO ()
@@ -45,12 +46,15 @@ main = do
             then return (Program userProgram)
             else do Program preludeProgram <- parseFile flags "Prelude.stg"
                     return $ Program (preludeProgram ++ userProgram)
+   -- possibly annotate the program with stack markers
+   let annotated = if existsFlag flags Annotate 
+                      then annotate fullProgram else fullProgram 
    -- compute arities of known functions
-   let arityProgram = runArity fullProgram
+   let arityProgram = runArity annotated 
    dump flags DumpArity (prettyText arityProgram) $
       "The program after arity analysis:\n"
    -- interpret the program
-   run flags arityProgram 
+   run flags arityProgram
 
 parseFile :: [Flag] -> FilePath -> IO Program
 parseFile flags file = do

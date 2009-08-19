@@ -72,16 +72,17 @@ existsFlag flags f
    probe someFlag = if f == someFlag then Just True else Nothing 
     
 data Flag 
-  = Style EvalStyle 
-  | Trace 
-  | TraceDir String 
-  | MaxTraceSteps Integer
-  | CallStack 
-  | Dump Dumped 
-  | NoPrelude
-  | NoGC
-  | Help
-  | Version
+  = Style EvalStyle        -- ^ Which evaluation rules to use (eval/apply or push enter)
+  | Trace                  -- ^ Turn tracing on.
+  | TraceDir String        -- ^ Directory to save trace file.
+  | MaxTraceSteps Integer  -- ^ Maximum trace steps to record.
+  | CallStack              -- ^ Include call stack in trace.
+  | Dump Dumped            -- ^ Dump something out to debug the interpreter.
+  | NoPrelude              -- ^ Do not automatically include the Prelude.
+  | NoGC                   -- ^ Disable garbage collection.
+  | Help                   -- ^ Print a help message and exit.
+  | Version                -- ^ Print the version number. 
+  | Annotate               -- ^ Auto annotate the program with stack markers.
   deriving (Eq, Ord, Show)
 
 data EvalStyle
@@ -108,6 +109,7 @@ options =
  , Option ['d']     ["dump"]      (ReqArg mkDumped "DUMPED") "output DUMPED for debugging purposes (ast, parsed, arity)"
  , Option ['v']     ["version"]   (NoArg Version)            "show version number"
  , Option ['h']     ["help"]      (NoArg Help)               "get help about using this program"
+ , Option ['a']     ["annotate"]  (NoArg Annotate)           "automatically annotate the program with stack markers"
  ]
 
 defaultTraceDir :: String
