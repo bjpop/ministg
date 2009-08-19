@@ -168,9 +168,11 @@ type Decl = (Var, Object)
 prettyDecl :: Decl -> Doc
 prettyDecl (var, obj) = text var <+> equals <+> pretty obj
 -- | A whole program.
-type Program = [Decl]
+newtype Program = Program [Decl]
+   deriving Show
 
-prettyProgram decls = vcat (punctuate semi (map prettyDecl decls))
+instance Pretty Program where
+   pretty (Program decls) = vcat (punctuate semi (map prettyDecl decls))
 
 -- | Primitive operators.
 data Prim

@@ -41,7 +41,7 @@ parser source input
         Right toks -> parse program source toks 
 
 program :: Parser Program
-program = sepEndBy decl semiColon <* eof
+program = Program <$> sepEndBy decl semiColon <* eof
 
 decl :: Parser Decl
 decl = (,) <$> var <*> (equals *> object)

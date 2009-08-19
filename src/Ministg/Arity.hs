@@ -48,7 +48,7 @@ instance Arity Object where
    arity other = return other
 
 instance Arity Program where
-   arity decls = local (Map.union as) $ mapM arity decls
+   arity (Program decls) = Program <$> (local (Map.union as) $ mapM arity decls)
       where
       as :: ArityMap
       as = Map.fromList [ (var, countArgs obj) | (var, obj) <- decls, isFun obj]

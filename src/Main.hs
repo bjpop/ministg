@@ -15,7 +15,7 @@
 module Main where
 
 import System (exitFailure)
-import Ministg.AST (Program, prettyProgram)
+import Ministg.AST (Program (Program))
 import Ministg.Parser (parser)
 import Ministg.Lexer (lexer, Token)
 import Control.Monad (when, unless)
@@ -24,7 +24,7 @@ import System.Directory (doesDirectoryExist, createDirectory)
 import Ministg.Utils (safeReadFile)
 import Ministg.Arity (runArity)
 import Ministg.Eval (run)
-import Ministg.Pretty (render)
+import Ministg.Pretty (prettyText)
 import Ministg.Options (processOptions, Flag (..), Dumped (..), existsFlag, getTraceDir)
 
 -- | The main driver of the program.
@@ -38,16 +38,16 @@ main = do
       dirExist <- doesDirectoryExist traceDir
       unless dirExist $ createDirectory traceDir 
    -- parse the file
-   userProgram <- parseFile flags file
+   Program userProgram <- parseFile flags file
    -- optionally include the Prelude
    fullProgram 
       <- if existsFlag flags NoPrelude
-            then return userProgram
-            else do preludeProgram <- parseFile flags "Prelude.stg"
-                    return $ preludeProgram ++ userProgram
+            then return (Program userProgram)
+            else do Program preludeProgram <- parseFile flags "Prelude.stg"
+                    return $ Program (preludeProgram ++ userProgram)
    -- compute arities of known functions
    let arityProgram = runArity fullProgram
-   dump flags DumpArity (render $ prettyProgram arityProgram) $
+   dump flags DumpArity (prettyText arityProgram) $
       "The program after arity analysis:\n"
    -- interpret the program
    run flags arityProgram 
@@ -63,7 +63,7 @@ parseFile flags file = do
             Left e -> (putStrLn $ "Parse error: " ++ show e) >> exitFailure
             Right program -> do 
                dump flags DumpAST (show program) $ "The AST of the program from " ++ file ++ ":\n"
-               dump flags DumpParsed (render $ prettyProgram program) $
+               dump flags DumpParsed (prettyText program) $
                     "The parsed program from " ++ file ++ ":\n"
                return program 
 
