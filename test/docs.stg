@@ -1,0 +1,26 @@
+nil = CON(Nil);
+zero = CON(I 0);
+one = CON(I 1);
+two = CON(I 2);
+three = CON(I 3);
+ 
+plusInt = FUN(x y ->
+   case x of {
+      I i -> case y of {
+               I j -> case plus# i j of {
+                         x -> let { result = CON (I x) } in result }}});
+ 
+foldl = FUN(f acc list ->
+   case list of {
+      Nil -> acc;
+      Cons h t -> let { newAcc = THUNK(f acc h) } in foldl f newAcc t
+   });
+ 
+# lazy sum with a well-known space leak
+sum = FUN(list -> foldl plusInt zero list);
+ 
+list1 = CON(Cons one nil);
+list2 = CON(Cons two list1);
+list3 = CON(Cons three list2);
+ 
+main = THUNK(sum list3);
