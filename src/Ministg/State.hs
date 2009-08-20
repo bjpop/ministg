@@ -29,6 +29,7 @@ module Ministg.State
    , incStepCount
    , setRule
    , prettyHeapObject
+   , isArgCont
    )
    where
 
@@ -65,6 +66,10 @@ instance Pretty Continuation where
         nest 3 (prettyCallStack callStack)
    pretty (ArgCont atom) = text "arg" <+> pretty atom 
    pretty (ApplyToArgs atoms) = parens (char '*' <+> hsep (map pretty atoms))
+
+isArgCont :: Continuation -> Bool
+isArgCont (ArgCont {}) = True
+isArgCont _other = False
 
 -- | The evaluation stack. 
 type Stack = [Continuation]

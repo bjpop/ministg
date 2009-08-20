@@ -1,20 +1,24 @@
 name:                ministg
 version:             0.1
 cabal-version:       >= 1.2
-synopsis:            ministg is an interpreter for a simple high-level operational semantics for the STG machine. 
+synopsis:            an interpreter for a simple high-level operational semantics for the STG machine. 
 description:         ministg is an interpreter for a simple high-level operational semantics for the STG machine. The
                      semantics is taken from the research paper "Making a fast curry: push/enter vs. eval/apply
-                     for higher-order languages", by Simon Marlow and Simon Peyton Jones.
+                     for higher-order languages", by Simon Marlow and Simon Peyton Jones. It provides the option
+                     to trace the execution of the interpreter, rendering each step in a HTML file. This is useful
+                     for understanding the behaviour of the STG machine, and also useful for experimenting with 
+                     changes to the machine. It also supports an experimental call stack tracing facility.
 category:            Language
 license:             BSD3
 license-file:        LICENSE
 copyright:           (c) 2009 Bernard James Pope
 author:              Bernard James Pope 
 maintainer:          bjpop@csse.unimelb.edu.au
-homepage:            
+homepage:            http://www.haskell.org/haskellwiki/Ministg 
 build-type:          Simple
 stability:           experimental
-extra-source-files:  
+tested-with:         GHC==6.10.4
+extra-source-files:  test/*.stg 
 
 Executable ministg 
   main-is:         Main.hs

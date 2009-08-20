@@ -55,7 +55,7 @@ exp = funCallOrVar <|>
       stack
 
 stack :: Parser Exp
-stack = Stack <$> (symbol Lex.Stack *> quotedString) <*> (leftParen *> exp <* rightParen)
+stack = Stack <$> (symbol Lex.Stack *> quotedString) <*> exp
 
 quotedString :: Parser String 
 quotedString = tokenParser getString

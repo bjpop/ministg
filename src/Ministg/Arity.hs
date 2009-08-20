@@ -53,11 +53,6 @@ instance Arity Program where
       as :: ArityMap
       as = Map.fromList [ (var, countArgs obj) | Decl var obj <- decls, isFun obj]
 
--- | True if an object is a funciton (FUN).
-isFun :: Object -> Bool
-isFun (Fun {}) = True
-isFun other = False
-
 -- | Count the number of arguments (really parameters) of a function object).
 countArgs :: Object -> Int
 countArgs (Fun args _) = length args

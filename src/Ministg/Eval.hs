@@ -45,10 +45,14 @@ evalProgram style heap = do
                 case object of
                    Error -> do
                       cs <- gets state_callStack
-                      return $ unlines ["Exception raised! Stack dump:", showCallStack cs]
+                      -- return $ unlines ["Exception raised!", showCallStack cs]
+                      return $ "Exception raised!" ++ displayCallStack cs
                    other -> return $ prettyHeapObject newHeap $ lookupHeap var newHeap
              other -> return $ "Runtime error: result of bigStep is not an atom: " ++ show other 
    liftIO $ putStrLn str
+   where
+   displayCallStack [] = []
+   displayCallStack cs = "\n\nCall stack:\n" ++ showCallStack cs
         
 -- | Reduce an exression to WHNF (a big step reduction, which may be composed
 -- of one or more small step reductions).
@@ -242,6 +246,8 @@ defaultPatternMatch [] = Nothing
 defaultPatternMatch (PatAlt {} : alts) = defaultPatternMatch alts
 defaultPatternMatch (DefaultAlt var exp : _alts) = Just (var, exp) 
 
+{-
+-- XXX move these "is" functions to the AST module.
 -- | Test for objects which denote values (WHNF values).
 isValue :: Object -> Bool
 isValue (Fun {}) = True
@@ -258,14 +264,19 @@ isFun other = False
 isPap :: Object -> Bool
 isPap (Pap {}) = True
 isPap other = False
+-}
 
+{-
 isLiteral :: Atom -> Bool
 isLiteral (Literal {}) = True
 isLiteral _other = False
+-}
 
+{-
 isArgCont :: Continuation -> Bool
 isArgCont (ArgCont {}) = True
 isArgCont _other = False
+-}
 
 -- | Convenience function for making integer primitives. 
 mkIntPrim :: (Integer -> Integer -> Integer) -> [Atom] -> Stack -> Heap -> Eval (Atom, Stack, Heap)

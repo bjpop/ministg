@@ -49,6 +49,11 @@ instance FreeVars Atom where
    freeVars (Literal {}) = Set.empty
    freeVars (Variable v) = Set.singleton v
 
+-- | Is an atom a literal?
+isLiteral :: Atom -> Bool
+isLiteral (Literal {}) = True
+isLiteral _other = False
+
 -- | The arity (number of parameters) of a function. It is only known when the function 
 -- being applied is statically known (not lambda bound).
 type FunArity = Maybe Int
@@ -95,7 +100,7 @@ instance Pretty Exp where
       nest 3 (vcat (punctuate semi (map pretty alts))) $$
       rbrace
    pretty (Stack annotation exp) = 
-      maybeNest exp (text "stack" <+> doubleQuotes (text annotation)) (parens (pretty exp))
+      maybeNest exp (text "stack" <+> doubleQuotes (text annotation)) (pretty exp)
 
 isNestedExp :: Exp -> Bool
 isNestedExp (Let {}) = True
@@ -161,6 +166,23 @@ instance Pretty Object where
       = text "THUNK" <> parens (pretty exp) $$ (nest 3 (prettyCallStack callStack))
    pretty BlackHole = text "BLACKHOLE"
    pretty Error = text "ERROR"
+
+-- | Test for "value" objects.
+isValue :: Object -> Bool
+isValue (Fun {}) = True
+isValue (Pap {}) = True
+isValue (Con {}) = True
+isValue _other = False
+
+-- | Test for FUN objects
+isFun :: Object -> Bool
+isFun (Fun {}) = True
+isFun other = False
+
+-- | Test for PAP objects
+isPap :: Object -> Bool
+isPap (Pap {}) = True
+isPap other = False
 
 -- | A top-level declaration (f = obj).
 data Decl = Decl Var Object

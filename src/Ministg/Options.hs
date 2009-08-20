@@ -37,12 +37,22 @@ import System
 programName :: String
 programName = "ministg"
 
+-- This should really come from the cabal file somehow.
+versionNumber :: String
+versionNumber = "0.1"
+
+versionInfo :: String
+versionInfo = unwords [programName, "version", versionNumber]
+
 processOptions :: [String] -> IO ([Flag], String)
 processOptions argv = 
    case getOpt RequireOrder options argv of
       (flags, nonOpts, []) 
          | existsFlag flags Help -> do 
               putStrLn $ usageInfo header options
+              exitWith ExitSuccess
+         | existsFlag flags Version -> do 
+              putStrLn versionInfo 
               exitWith ExitSuccess
          | length nonOpts /= 1 ->
               raiseError ["You must specify a single input stg file.\n"]  
