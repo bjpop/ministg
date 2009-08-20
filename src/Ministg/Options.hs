@@ -39,7 +39,7 @@ programName = "ministg"
 
 -- This should really come from the cabal file somehow.
 versionNumber :: String
-versionNumber = "0.1"
+versionNumber = "0.2"
 
 versionInfo :: String
 versionInfo = unwords [programName, "version", versionNumber]

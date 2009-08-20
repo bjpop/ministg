@@ -1,5 +1,5 @@
 name:                ministg
-version:             0.1
+version:             0.2
 cabal-version:       >= 1.6
 synopsis:            an interpreter for an operational semantics for the STG machine. 
 description:         ministg is an interpreter for a simple high-level operational semantics for the STG machine. The
