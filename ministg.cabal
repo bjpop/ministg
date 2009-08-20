@@ -1,7 +1,7 @@
 name:                ministg
 version:             0.1
-cabal-version:       >= 1.2
-synopsis:            an interpreter for a simple high-level operational semantics for the STG machine. 
+cabal-version:       >= 1.6
+synopsis:            an interpreter for an operational semantics for the STG machine. 
 description:         ministg is an interpreter for a simple high-level operational semantics for the STG machine. The
                      semantics is taken from the research paper "Making a fast curry: push/enter vs. eval/apply
                      for higher-order languages", by Simon Marlow and Simon Peyton Jones. It provides the option
