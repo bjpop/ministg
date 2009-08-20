@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      : Ministg.Eval
+-- Module      : Ministg.Utils
 -- Copyright   : (c) 2009 Bernie Pope 
 -- License     : BSD-style
 -- Maintainer  : bjpop@csse.unimelb.edu.au

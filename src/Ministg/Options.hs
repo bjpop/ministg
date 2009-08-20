@@ -7,7 +7,7 @@
 -- Stability   : experimental
 -- Portability : ghc
 --
--- Some handy utilities. 
+-- Command line option processing. 
 -----------------------------------------------------------------------------
 module Ministg.Options 
    ( processOptions

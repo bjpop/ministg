@@ -9,9 +9,7 @@
 --
 -- Parsing for ministg programs.
 -----------------------------------------------------------------------------
-module Ministg.Parser 
-   ( parser )
-   where
+module Ministg.Parser (parser) where
 
 import Prelude hiding (exp, subtract)
 import Text.ParserCombinators.Parsec hiding (Parser)

@@ -12,7 +12,6 @@
 module Ministg.AST where
 
 import Prelude 
--- import qualified Ministg.Lexer as Lex
 import Ministg.CallStack (CallStack, prettyCallStack)
 import Ministg.Pretty
 import Data.Set as Set hiding (map)

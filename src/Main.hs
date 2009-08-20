@@ -78,13 +78,3 @@ dump flags dumped str msg =
       putStrLn str 
       putStr "\n"
 
-{-
--- | Parse a ministg program from the contents of a named file.
-parseFile :: FilePath   -- ^ The name of the file.
-          -> String     -- ^ The contents of the file. 
-          -> IO Program -- ^ The parsed program.
-parseFile file contents 
-   = case parser file contents of
-       Left e -> (putStrLn $ "Parse error: " ++ show e) >> exitFailure
-       Right prog -> return prog 
--}

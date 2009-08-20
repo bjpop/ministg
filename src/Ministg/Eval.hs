@@ -45,7 +45,6 @@ evalProgram style heap = do
                 case object of
                    Error -> do
                       cs <- gets state_callStack
-                      -- return $ unlines ["Exception raised!", showCallStack cs]
                       return $ "Exception raised!" ++ displayCallStack cs
                    other -> return $ prettyHeapObject newHeap $ lookupHeap var newHeap
              other -> return $ "Runtime error: result of bigStep is not an atom: " ++ show other 
@@ -192,7 +191,7 @@ smallStep EvalApply (FunApp _anyArity f args) stack heap
         let newHeap = updateHeap p (Pap f args) heap
         return $ Just (Atom (Variable p), stack, newHeap)
 -- TCALL
--- XXX fix up call stack
+-- XXX fix up call stack?
 smallStep EvalApply (FunApp Nothing f args) stack heap
    | Thunk exp thunkCallStack <- lookupHeap f heap = do
         setRule "TCALL"
@@ -245,38 +244,6 @@ defaultPatternMatch :: [Alt] -> Maybe (Var, Exp)
 defaultPatternMatch [] = Nothing
 defaultPatternMatch (PatAlt {} : alts) = defaultPatternMatch alts
 defaultPatternMatch (DefaultAlt var exp : _alts) = Just (var, exp) 
-
-{-
--- XXX move these "is" functions to the AST module.
--- | Test for objects which denote values (WHNF values).
-isValue :: Object -> Bool
-isValue (Fun {}) = True
-isValue (Pap {}) = True
-isValue (Con {}) = True
-isValue _other = False
-
--- | Test for FUN objects
-isFun :: Object -> Bool
-isFun (Fun {}) = True
-isFun other = False
-
--- | Test for PAP objects
-isPap :: Object -> Bool
-isPap (Pap {}) = True
-isPap other = False
--}
-
-{-
-isLiteral :: Atom -> Bool
-isLiteral (Literal {}) = True
-isLiteral _other = False
--}
-
-{-
-isArgCont :: Continuation -> Bool
-isArgCont (ArgCont {}) = True
-isArgCont _other = False
--}
 
 -- | Convenience function for making integer primitives. 
 mkIntPrim :: (Integer -> Integer -> Integer) -> [Atom] -> Stack -> Heap -> Eval (Atom, Stack, Heap)

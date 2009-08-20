@@ -1,3 +1,15 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      : Ministg.Pretty
+-- Copyright   : (c) 2009 Bernie Pope 
+-- License     : BSD-style
+-- Maintainer  : bjpop@csse.unimelb.edu.au
+-- Stability   : experimental
+-- Portability : ghc
+--
+-- Convenient class wrapper for pretty printing. 
+-----------------------------------------------------------------------------
+
 module Ministg.Pretty (module Ministg.Pretty, module HPJ) where
 
 import Text.PrettyPrint.HughesPJ as HPJ
