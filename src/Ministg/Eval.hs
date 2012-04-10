@@ -86,9 +86,6 @@ smallStep _anyStyle (Let var object exp) stack heap = do
    let newExp = subs (mkSub var (Variable newVar)) exp 
    return $ Just (newExp, stack, newHeap)
 -- CASECON
--- We don't catch pattern match errors here because we assume
--- that the compiler will insert a default clause which will
--- fire if no previous pattern matches.
 smallStep _anyStyle (Case (Atom (Variable v)) alts) stack heap
    | Con constructor args <- lookupHeap v heap, 
      Just (vars, exp) <- exactPatternMatch constructor alts = do
@@ -96,10 +93,15 @@ smallStep _anyStyle (Case (Atom (Variable v)) alts) stack heap
         return $ Just (subs (mkSubList $ zip vars args) exp, stack, heap)
 -- CASEANY
 smallStep _anyStyle (Case (Atom v) alts) stack heap
-   | isLiteral v || isValue (lookupHeapAtom v heap), 
-     Just (x, exp) <- defaultPatternMatch alts = do
-        setRule "CASEANY"
-        return $ Just (subs (mkSub x v) exp, stack, heap)
+   | isLiteral v || isValue (lookupHeapAtom v heap) =
+        case defaultPatternMatch alts of
+           Just (x, exp) -> do
+              setRule "CASEANY"
+              return $ Just (subs (mkSub x v) exp, stack, heap)
+           -- technically the compiler should insert a catch-all default alternative
+           -- for each case expression, but if we don't check for it here we
+           -- could have non-desirable error behaviour such as an infinite loop.
+           Nothing -> fail "non exhaustive patterns in case expression"
 -- CASE
 smallStep _anyStyle (Case exp alts) stack heap = do
    setRule "CASE"
