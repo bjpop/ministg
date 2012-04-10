@@ -1,5 +1,5 @@
 name:                ministg
-version:             0.2
+version:             0.3
 cabal-version:       >= 1.6
 synopsis:            an interpreter for an operational semantics for the STG machine. 
 description:         ministg is an interpreter for a simple high-level operational semantics for the STG machine. The
@@ -11,9 +11,9 @@ description:         ministg is an interpreter for a simple high-level operation
 category:            Language
 license:             BSD3
 license-file:        LICENSE
-copyright:           (c) 2009 Bernard James Pope
+copyright:           (c) 2009, 2010, 2011 Bernard James Pope
 author:              Bernard James Pope 
-maintainer:          bjpop@csse.unimelb.edu.au
+maintainer:          florbitous@gmail.com
 homepage:            http://www.haskell.org/haskellwiki/Ministg 
 build-type:          Simple
 stability:           experimental
