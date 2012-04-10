@@ -2,9 +2,9 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : Ministg.TraceEval
--- Copyright   : (c) 2009 Bernie Pope 
+-- Copyright   : (c) 2009-2012 Bernie Pope 
 -- License     : BSD-style
--- Maintainer  : bjpop@csse.unimelb.edu.au
+-- Maintainer  : florbitous@gmail.com
 -- Stability   : experimental
 -- Portability : ghc
 --
