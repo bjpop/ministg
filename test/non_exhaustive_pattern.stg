@@ -1,0 +1,5 @@
+foo = CON(Foo);
+end = CON(End);
+main = THUNK(
+   case foo of { Bar -> end; x -> error; }
+);

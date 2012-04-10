@@ -86,6 +86,9 @@ smallStep _anyStyle (Let var object exp) stack heap = do
    let newExp = subs (mkSub var (Variable newVar)) exp 
    return $ Just (newExp, stack, newHeap)
 -- CASECON
+-- We don't catch pattern match errors here because we assume
+-- that the compiler will insert a default clause which will
+-- fire if no previous pattern matches.
 smallStep _anyStyle (Case (Atom (Variable v)) alts) stack heap
    | Con constructor args <- lookupHeap v heap, 
      Just (vars, exp) <- exactPatternMatch constructor alts = do
