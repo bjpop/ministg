@@ -23,7 +23,7 @@ extra-source-files:  README.txt test/*.stg
 Executable ministg 
   main-is:         Main.hs
   hs-source-dirs:  src
-  build-depends:   base >= 3 && < 5, monads-tf, transformers, containers, parsec >= 3, pretty, haskell98, xhtml, directory, filepath
+  build-depends:   base >= 3 && < 5, monads-tf, transformers, containers, parsec >= 3, pretty, xhtml, directory, filepath
   other-modules:
       Ministg.AST
       Ministg.Lexer

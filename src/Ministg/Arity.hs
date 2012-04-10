@@ -15,7 +15,8 @@
 
 module Ministg.Arity (runArity, Arity) where
 
-import Data.Map as Map
+import qualified Data.Map as Map
+import Data.Map (Map)
 import Control.Monad.Reader
 import Control.Applicative
 import Ministg.AST

@@ -31,8 +31,8 @@ import System.Console.GetOpt
 import Data.Maybe (fromMaybe)
 import Data.Char (toLower, isDigit)
 import Data.Maybe (catMaybes)
-import IO (stderr, hPutStrLn)
-import System
+import System.IO (stderr, hPutStrLn)
+import System.Exit
 
 programName :: String
 programName = "ministg"

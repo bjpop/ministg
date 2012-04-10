@@ -14,12 +14,12 @@
 
 module Main where
 
-import System (exitFailure)
+import System.Exit (exitFailure)
 import Ministg.AST (Program (Program))
 import Ministg.Parser (parser)
 import Ministg.Lexer (lexer, Token)
 import Control.Monad (when, unless)
-import System (getArgs, exitFailure)
+import System.Environment (getArgs)
 import System.Directory (doesDirectoryExist, createDirectory)
 import Ministg.Utils (safeReadFile)
 import Ministg.Arity (runArity)

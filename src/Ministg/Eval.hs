@@ -16,7 +16,8 @@ module Ministg.Eval (run) where
 
 import Control.Monad.State (evalStateT, gets)
 import Control.Monad.Trans (liftIO)
-import Data.Map as Map hiding (map)
+import qualified Data.Map as Map
+import Data.Map (Map)
 import Data.List (foldl')
 import Ministg.AST
 import Ministg.CallStack (CallStack, push, showCallStack)
