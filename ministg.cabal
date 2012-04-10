@@ -20,6 +20,10 @@ stability:           experimental
 tested-with:         GHC==6.10.4
 extra-source-files:  README.txt test/*.stg 
 
+source-repository head
+  type:     git
+  location: https://github.com/bjpop/ministg.git 
+
 Executable ministg 
   main-is:         Main.hs
   hs-source-dirs:  src
