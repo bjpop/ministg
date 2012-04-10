@@ -10,4 +10,4 @@ For building and installing please consult the web page:
 
 Feedback, feature requests, bug reports:
 
-  Bernie Pope: http://www.cs.mu.oz.au/~bjpop/
+  Bernie Pope: http://www.berniepope.id.au
