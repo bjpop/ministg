@@ -11,7 +11,7 @@
 -- Trace the evaluation steps of the interpreter and generate HTML output. 
 -----------------------------------------------------------------------------
 
-module Ministg.TraceEval (traceEval, traceEnd) where
+module Ministg.TraceEval (traceEval, traceEnd, traceMaxStepsExceeded) where
 
 import System.FilePath ((<.>), (</>))
 import Control.Monad (when, join)
@@ -30,12 +30,13 @@ import Data.List as List (sortBy)
 traceEval :: Exp -> Stack -> Heap -> Eval ()
 traceEval exp stack heap = do
    traceOn <- gets state_trace
-   when traceOn $ do 
-      count <- gets state_stepCount
-      maxSteps <- gets state_maxTraceSteps
-      when (count <= maxSteps) $ do
-         join (writeTraceFile <$> makeHtml exp stack heap)
-      when (count == maxSteps + 1) $ lastTracePage "Maximum trace steps exceeded"
+   when traceOn $
+      join (writeTraceFile <$> makeHtml exp stack heap)
+
+traceMaxStepsExceeded :: Eval ()
+traceMaxStepsExceeded = do
+   maxSteps <- gets state_maxTraceSteps
+   lastTracePage ("Maximum trace steps " ++ show maxSteps ++ " exceeded")
 
 traceEnd :: Eval ()
 traceEnd = do

@@ -41,7 +41,7 @@ import Ministg.CallStack (CallStack, push, prettyCallStack)
 import Ministg.Pretty 
 import Ministg.Options 
    ( Flag (..), defaultMaxSteps, defaultTraceDir
-   , probeFlagsFirst, existsFlag, getTraceDir, getMaxTraceSteps )
+   , probeFlagsFirst, existsFlag, getTraceDir, getMaxSteps )
 
 -- | Stack continuations.
 data Continuation
@@ -108,7 +108,7 @@ initState flags =
    , state_stepCount = 0 
    , state_lastRule = ""
    , state_trace = existsFlag flags Trace 
-   , state_maxTraceSteps = getMaxTraceSteps flags
+   , state_maxTraceSteps = getMaxSteps flags
    , state_traceDir = getTraceDir flags
    , state_gc = not $ existsFlag flags NoGC 
    , state_traceCallStack = existsFlag flags CallStack

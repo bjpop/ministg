@@ -22,7 +22,7 @@ module Ministg.Options
    , probeFlagsFirst
    , existsFlag
    , getTraceDir
-   , getMaxTraceSteps
+   , getMaxSteps
    , getEvalStyle
    )
    where
@@ -39,7 +39,7 @@ programName = "ministg"
 
 -- This should really come from the cabal file somehow.
 versionNumber :: String
-versionNumber = "0.2"
+versionNumber = "0.3"
 
 versionInfo :: String
 versionInfo = unwords [programName, "version", versionNumber]
@@ -85,7 +85,7 @@ data Flag
   = Style EvalStyle        -- ^ Which evaluation rules to use (eval/apply or push enter)
   | Trace                  -- ^ Turn tracing on.
   | TraceDir String        -- ^ Directory to save trace file.
-  | MaxTraceSteps Integer  -- ^ Maximum trace steps to record.
+  | MaxSteps Integer       -- ^ Maximum reduction steps to perform.
   | CallStack              -- ^ Include call stack in trace.
   | Dump Dumped            -- ^ Dump something out to debug the interpreter.
   | NoPrelude              -- ^ Do not automatically include the Prelude.
@@ -112,7 +112,7 @@ options =
  [ Option ['s']     ["style"]     (ReqArg mkStyle "STYLE")   "evaluation STYLE to use (EA = eval apply, PE = push enter)"
  , Option ['t']     ["trace"]     (NoArg Trace)              "record a trace of program evaluation"
  , Option []        ["tracedir"]  (ReqArg TraceDir "DIR")    "directory (DIR) to store trace files"
- , Option ['m']     ["maxsteps"]  (ReqArg mkMaxSteps "STEPS")  "maximum number of evaluation STEPS to record in trace"
+ , Option ['m']     ["maxsteps"]  (ReqArg mkMaxSteps "STEPS")  "maximum number of reduction STEPS to perform"
  , Option ['c']     ["callstack"] (NoArg CallStack)          "enable call stack tracing"
  , Option []        ["noprelude"] (NoArg NoPrelude)          "do not import the Prelude"
  , Option []        ["nogc"]      (NoArg NoGC)               "disable garbage collector"
@@ -147,15 +147,15 @@ defaultMaxSteps :: Integer
 defaultMaxSteps = 1000
 
 mkMaxSteps :: String -> Flag 
-mkMaxSteps [] = MaxTraceSteps defaultMaxSteps 
+mkMaxSteps [] = MaxSteps defaultMaxSteps 
 mkMaxSteps n
-   | all isDigit n = MaxTraceSteps $ read n
-   | otherwise = MaxTraceSteps defaultMaxSteps
+   | all isDigit n = MaxSteps $ read n
+   | otherwise = MaxSteps defaultMaxSteps
 
-getMaxTraceSteps :: [Flag] -> Integer 
-getMaxTraceSteps flags =
+getMaxSteps :: [Flag] -> Integer 
+getMaxSteps flags =
       probeFlagsFirst flags probe defaultMaxSteps
-      where probe (MaxTraceSteps i) = Just i
+      where probe (MaxSteps i) = Just i
             probe other = Nothing
 
 getTraceDir :: [Flag] -> String

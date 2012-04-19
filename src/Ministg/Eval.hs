@@ -23,7 +23,7 @@ import Ministg.AST
 import Ministg.CallStack (CallStack, push, showCallStack)
 import Ministg.Pretty
 import Ministg.State
-import Ministg.TraceEval (traceEval, traceEnd)
+import Ministg.TraceEval (traceEval, traceEnd, traceMaxStepsExceeded)
 import Ministg.Options as Opts 
        (Flag (..), EvalStyle (..), defaultEvalStyle, probeFlagsFirst, getEvalStyle)
 import Ministg.GC (garbageCollect)
@@ -58,15 +58,22 @@ evalProgram style heap = do
 -- of one or more small step reductions).
 bigStep :: EvalStyle -> Exp -> Stack -> Heap -> Eval (Exp, Stack, Heap) 
 bigStep style exp stack heap = do
-   gcHeap <- garbageCollect exp stack heap
-   traceEval exp stack gcHeap 
-   result <- smallStep style exp stack gcHeap
-   incStepCount
-   case result of
-      -- Nothing more to do, we have reached a WHNF value (or perhaps some error).
-      Nothing -> return (exp, stack, gcHeap)
-      -- There might be more to do, keep trying.
-      Just (newExp, newStack, newHeap) -> bigStep style newExp newStack newHeap
+   count <- gets state_stepCount 
+   maxSteps <- gets state_maxTraceSteps
+   if count > maxSteps
+      then do
+         traceMaxStepsExceeded
+         fail ("Maximum reduction steps " ++ show maxSteps ++ " exceeded")
+      else do
+         gcHeap <- garbageCollect exp stack heap
+         traceEval exp stack gcHeap 
+         result <- smallStep style exp stack gcHeap
+         incStepCount
+         case result of
+            -- Nothing more to do, we have reached a WHNF value (or perhaps some error).
+            Nothing -> return (exp, stack, gcHeap)
+            -- There might be more to do, keep trying.
+            Just (newExp, newStack, newHeap) -> bigStep style newExp newStack newHeap
 
 -- | Perform one step of reduction. These equations correspond to the
 -- rules in the operational semantics described in the "fast curry" paper.
