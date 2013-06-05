@@ -13,10 +13,11 @@ module Ministg.Utils where
 
 import Control.Monad 
    ( liftM )
+import System.IO.Error (catchIOError)
 
 safeReadFile :: FilePath -> IO (Either String String) 
 safeReadFile file
-   = catch (rightReadFile file) $ \error -> return $ Left $ show error 
+   = catchIOError (rightReadFile file) $ \error -> return $ Left $ show error 
    where
    rightReadFile :: FilePath -> IO (Either String String)
    rightReadFile file = liftM Right $ readFile file
