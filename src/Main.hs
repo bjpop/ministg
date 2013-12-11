@@ -60,7 +60,8 @@ parseFile :: [Flag] -> FilePath -> IO Program
 parseFile flags file = do
    tryContents <- safeReadFile file
    case tryContents of
-      Left errorMsg -> putStrLn errorMsg >> exitFailure
+      Left errorMsg -> do putStrLn $ "Error reading from file: " ++ file
+                          putStrLn errorMsg >> exitFailure
       Right contents -> do
          -- parse the program
          case parser file contents of
