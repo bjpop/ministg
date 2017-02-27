@@ -1,6 +1,6 @@
 name:                ministg
 version:             0.3
-cabal-version:       >= 1.6
+cabal-version:       >= 1.8
 synopsis:            an interpreter for an operational semantics for the STG machine. 
 description:         ministg is an interpreter for a simple high-level operational semantics for the STG machine. The
                      semantics is taken from the research paper "Making a fast curry: push/enter vs. eval/apply
@@ -24,11 +24,19 @@ source-repository head
   type:     git
   location: https://github.com/bjpop/ministg.git 
 
-Executable ministg 
-  main-is:         Main.hs
-  hs-source-dirs:  src
-  build-depends:   base >= 3 && < 5, monads-tf, transformers, containers, parsec >= 3, pretty, xhtml, directory, filepath
-  other-modules:
+
+Library
+  hs-source-dirs: src
+  build-depends:
+      base >= 3 && < 5,
+      monads-tf,
+      transformers,
+      containers,
+      parsec >= 3,
+      pretty,
+      xhtml,
+      filepath
+  exposed-modules:
       Ministg.AST
       Ministg.Lexer
       Ministg.Parser
@@ -42,3 +50,8 @@ Executable ministg
       Ministg.Options
       Ministg.GC
       Ministg.Annotate
+
+
+Executable ministg
+  main-is:         src/Main.hs
+  build-depends:   ministg, base >= 3 && <5, directory
