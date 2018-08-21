@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      : Ministg.CallStack
@@ -13,6 +14,9 @@
 module Ministg.CallStack (CallStack, push, showCallStack, prettyCallStack) where
 
 import Ministg.Pretty
+#if MIN_VERSION_base(4,11,0)
+import Prelude hiding ((<>))
+#endif
 
 type CallStack = [String]
 

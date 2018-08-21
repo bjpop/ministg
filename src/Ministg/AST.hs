@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      : Ministg.AST 
@@ -11,10 +12,12 @@
 -----------------------------------------------------------------------------
 module Ministg.AST where
 
-import Prelude 
 import Ministg.CallStack (CallStack, prettyCallStack)
 import Ministg.Pretty
 import Data.Set as Set hiding (map)
+#if MIN_VERSION_base(4,11,0)
+import Prelude hiding ((<>))
+#endif
 
 -- | Variables (also known as identifiers).
 type Var = String
