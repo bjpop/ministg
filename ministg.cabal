@@ -35,9 +35,7 @@ Library
       parsec >= 3,
       pretty,
       xhtml,
-      filepath,
-      inliterate
-      -- for tintin
+      filepath
   exposed-modules:
       Ministg.AST
       Ministg.Lexer
