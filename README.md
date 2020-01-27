@@ -1,3 +1,5 @@
+![Haskell CI](https://github.com/andreabedini/ministg/workflows/Haskell%20CI/badge.svg)
+
 Thank you for trying Ministg. Check out the [Documentation].
 
 Install with `cabal install` from the root directory. Or `cabal install
