@@ -28,11 +28,10 @@ module Ministg.Options
    where
 
 import System.Console.GetOpt
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Char (toLower, isDigit)
-import Data.Maybe (catMaybes)
 import System.IO (stderr, hPutStrLn)
-import System.Exit
+import System.Exit (exitFailure, exitSuccess)
 
 programName :: String
 programName = "ministg"
@@ -50,10 +49,10 @@ processOptions argv =
       (flags, nonOpts, [])
          | existsFlag flags Help -> do
               putStrLn $ usageInfo header options
-              exitWith ExitSuccess
+              exitSuccess
          | existsFlag flags Version -> do
               putStrLn versionInfo
-              exitWith ExitSuccess
+              exitSuccess
          | length nonOpts /= 1 ->
               raiseError ["You must specify a single input stg file.\n"]
          | otherwise -> return (flags, head nonOpts)
@@ -66,7 +65,7 @@ processOptions argv =
          exitFailure
 
 probeFlags :: [Flag] -> (Flag -> Maybe a) -> [a]
-probeFlags flags probe = catMaybes (map probe flags)
+probeFlags flags probe = mapMaybe probe flags
 
 probeFlagsFirst :: [Flag] -> (Flag -> Maybe a) -> a -> a
 probeFlagsFirst flags probe defaultValue
