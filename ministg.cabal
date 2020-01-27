@@ -18,7 +18,7 @@ homepage:            http://www.haskell.org/haskellwiki/Ministg
 build-type:          Simple
 stability:           experimental
 tested-with:         GHC==7.4.1
-extra-source-files:  README.txt test/*.stg
+extra-source-files:  README.md test/*.stg
 
 source-repository head
   type:     git
