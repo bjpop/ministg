@@ -14,6 +14,7 @@
 
 module Main where
 
+import Data.Monoid (mconcat)
 import System.Exit (exitFailure)
 import Ministg.AST (Program (Program))
 import Ministg.Parser (parser)
@@ -32,20 +33,17 @@ import Ministg.Annotate
 main :: IO ()
 main = do
    args <- getArgs
-   (flags, file) <- processOptions args
+   (flags, files) <- processOptions args
    -- create trace directory if necessary
    when (existsFlag flags Trace) $ do
       let traceDir = getTraceDir flags
       dirExist <- doesDirectoryExist traceDir
       unless dirExist $ createDirectory traceDir
-   -- parse the file
-   Program userProgram <- parseFile flags file
+   -- parse the files
+   programs <- traverse (parseFile flags) files
+   -- Program userProgram <- parseFile flags files
    -- optionally include the Prelude
-   fullProgram
-      <- if existsFlag flags NoPrelude
-            then return (Program userProgram)
-            else do Program preludeProgram <- parseFile flags "Prelude.stg"
-                    return $ Program (preludeProgram ++ userProgram)
+   let fullProgram = mconcat programs
    -- possibly annotate the program with stack markers
    let annotated = if existsFlag flags Annotate
                       then annotate fullProgram else fullProgram

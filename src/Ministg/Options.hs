@@ -43,7 +43,7 @@ versionNumber = "0.3"
 versionInfo :: String
 versionInfo = unwords [programName, "version", versionNumber]
 
-processOptions :: [String] -> IO ([Flag], String)
+processOptions :: [String] -> IO ([Flag], [String])
 processOptions argv =
    case getOpt RequireOrder options argv of
       (flags, nonOpts, [])
@@ -53,9 +53,7 @@ processOptions argv =
          | existsFlag flags Version -> do
               putStrLn versionInfo
               exitSuccess
-         | length nonOpts /= 1 ->
-              raiseError ["You must specify a single input stg file.\n"]
-         | otherwise -> return (flags, head nonOpts)
+         | otherwise -> return (flags, nonOpts)
       (_, _, errs) -> raiseError errs
       where
       header = "Usage: " ++ programName ++ " [OPTION...] file"
@@ -113,7 +111,6 @@ options =
  , Option []        ["tracedir"]  (ReqArg TraceDir "DIR")    "directory (DIR) to store trace files"
  , Option ['m']     ["maxsteps"]  (ReqArg mkMaxSteps "STEPS")  "maximum number of reduction STEPS to perform"
  , Option ['c']     ["callstack"] (NoArg CallStack)          "enable call stack tracing"
- , Option []        ["noprelude"] (NoArg NoPrelude)          "do not import the Prelude"
  , Option []        ["nogc"]      (NoArg NoGC)               "disable garbage collector"
  , Option ['d']     ["dump"]      (ReqArg mkDumped "DUMPED") "output DUMPED for debugging purposes (ast, parsed, arity)"
  , Option ['v']     ["version"]   (NoArg Version)            "show version number"

@@ -12,11 +12,10 @@ Bernie Pope: <http://www.berniepope.id.au>, alternatively issues on github.
 ## Usage
 
 ```
-cd test
-ministg sum.stg
+cabal run ministg -- test/Prelude.stg test/sum.stg
 ```
 
-Note that unless the flag `--noprelude` is passed, it'll expect it.
-That's why you have to explicitly `cd` into the `test` folder.
+Note that the prelude is not automatically imported and has to be
+explicitly loaded.
 
 [Documentation]: http://www.haskell.org/haskellwiki/Ministg

@@ -12,6 +12,7 @@
 -----------------------------------------------------------------------------
 module Ministg.AST where
 
+import qualified Data.Semigroup as Semigroup
 import Ministg.CallStack (CallStack, prettyCallStack)
 import Ministg.Pretty
 import Data.Set as Set hiding (map)
@@ -196,6 +197,12 @@ instance Pretty Decl where
 -- | A whole program.
 newtype Program = Program [Decl]
    deriving Show
+
+instance Semigroup Program where
+  (Program decl1) <> (Program decl2) = Program (decl1 Semigroup.<> decl2)
+
+instance Monoid Program where
+  mempty = Program []
 
 instance Pretty Program where
    pretty (Program decls) = vcat (punctuate semi (map pretty decls))
