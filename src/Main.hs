@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      : Main 
--- Copyright   : (c) 2009-2012 Bernie Pope 
+-- Module      : Main
+-- Copyright   : (c) 2009-2012 Bernie Pope
 -- License     : BSD-style
 -- Maintainer  : florbitous@gmail.com
 -- Stability   : experimental
@@ -37,20 +37,20 @@ main = do
    when (existsFlag flags Trace) $ do
       let traceDir = getTraceDir flags
       dirExist <- doesDirectoryExist traceDir
-      unless dirExist $ createDirectory traceDir 
+      unless dirExist $ createDirectory traceDir
    -- parse the file
    Program userProgram <- parseFile flags file
    -- optionally include the Prelude
-   fullProgram 
+   fullProgram
       <- if existsFlag flags NoPrelude
             then return (Program userProgram)
             else do Program preludeProgram <- parseFile flags "Prelude.stg"
                     return $ Program (preludeProgram ++ userProgram)
    -- possibly annotate the program with stack markers
-   let annotated = if existsFlag flags Annotate 
-                      then annotate fullProgram else fullProgram 
+   let annotated = if existsFlag flags Annotate
+                      then annotate fullProgram else fullProgram
    -- compute arities of known functions
-   let arityProgram = runArity annotated 
+   let arityProgram = runArity annotated
    dump flags DumpArity (prettyText arityProgram) $
       "The program after arity analysis:\n"
    -- interpret the program
@@ -66,15 +66,15 @@ parseFile flags file = do
          -- parse the program
          case parser file contents of
             Left e -> (putStrLn $ "Parse error: " ++ show e) >> exitFailure
-            Right program -> do 
+            Right program -> do
                dump flags DumpAST (show program) $ "The AST of the program from " ++ file ++ ":\n"
                dump flags DumpParsed (prettyText program) $
                     "The parsed program from " ++ file ++ ":\n"
-               return program 
+               return program
 
-dump :: [Flag] -> Dumped -> String -> String -> IO () 
-dump flags dumped str msg = 
+dump :: [Flag] -> Dumped -> String -> String -> IO ()
+dump flags dumped str msg =
    when (existsFlag flags $ Dump dumped) $ do
-      putStrLn msg 
-      putStrLn str 
+      putStrLn msg
+      putStrLn str
       putStr "\n"
