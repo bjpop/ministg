@@ -51,7 +51,7 @@ main = do
                       then annotate fullProgram else fullProgram
    -- compute arities of known functions
    let arityProgram = runArity annotated
-   dump flags DumpArity (prettyText arityProgram) $
+   dump flags DumpArity (prettyText arityProgram)
       "The program after arity analysis:\n"
    -- interpret the program
    run flags arityProgram
@@ -62,10 +62,10 @@ parseFile flags file = do
    case tryContents of
       Left errorMsg -> do putStrLn $ "Error reading from file: " ++ file
                           putStrLn errorMsg >> exitFailure
-      Right contents -> do
+      Right contents ->
          -- parse the program
          case parser file contents of
-            Left e -> (putStrLn $ "Parse error: " ++ show e) >> exitFailure
+            Left e -> putStrLn ("Parse error: " ++ show e) >> exitFailure
             Right program -> do
                dump flags DumpAST (show program) $ "The AST of the program from " ++ file ++ ":\n"
                dump flags DumpParsed (prettyText program) $
