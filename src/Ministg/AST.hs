@@ -31,7 +31,7 @@ instance FreeVars t => FreeVars [t] where
    freeVars = Set.unions . map freeVars
 
 -- | Literal integers. These correspond to unboxed integers in the semantics.
-data Literal = Integer Integer
+newtype Literal = Integer Integer
    deriving (Eq, Show)
 
 instance Pretty Literal where
@@ -48,12 +48,12 @@ instance Pretty Atom where
    pretty (Variable v) = text v
 
 instance FreeVars Atom where
-   freeVars (Literal {}) = Set.empty
+   freeVars Literal {} = Set.empty
    freeVars (Variable v) = Set.singleton v
 
 -- | Is an atom a literal?
 isLiteral :: Atom -> Bool
-isLiteral (Literal {}) = True
+isLiteral Literal {} = True
 isLiteral _other = False
 
 -- | The arity (number of parameters) of a function. It is only known when the function
@@ -96,7 +96,7 @@ instance Pretty Exp where
       prettyDecls = vcat (punctuate semi (map pretty decls))
       maybeNest letPart declPart inPart
          | length decls < 2 = letPart <+> declPart <+> inPart
-         | otherwise = letPart $$ (nest 3 declPart) $$ inPart
+         | otherwise = letPart $$ nest 3 declPart $$ inPart
    pretty (Case exp alts) =
       text "case" <+> pretty exp <+> text "of {" $$
       nest 3 (vcat (punctuate semi (map pretty alts))) $$
@@ -105,9 +105,9 @@ instance Pretty Exp where
       maybeNest exp (text "stack" <+> doubleQuotes (text annotation)) (pretty exp)
 
 isNestedExp :: Exp -> Bool
-isNestedExp (Let {}) = True
-isNestedExp (Case {}) = True
-isNestedExp (Stack {}) = True
+isNestedExp Let {} = True
+isNestedExp Case {} = True
+isNestedExp Stack {} = True
 isNestedExp other = False
 
 unflattenLet :: Exp -> ([Decl], Exp)
@@ -157,7 +157,7 @@ instance FreeVars Object where
    freeVars Error = Set.empty
 
 maybeNest :: Exp -> Doc -> Doc -> Doc
-maybeNest exp d1 d2 = if isNestedExp exp then d1 $$ (nest 3 d2) else d1 <+> d2
+maybeNest exp d1 d2 = if isNestedExp exp then d1 $$ nest 3 d2 else d1 <+> d2
 
 instance Pretty Object where
    pretty (Fun vars exp)
@@ -165,25 +165,25 @@ instance Pretty Object where
    pretty (Pap var atoms) = text "PAP" <> parens (text var <+> hsep (map pretty atoms))
    pretty (Con constructor atoms) = text "CON" <> parens (text constructor <+> hsep (map pretty atoms))
    pretty (Thunk exp callStack)
-      = text "THUNK" <> parens (pretty exp) $$ (nest 3 (prettyCallStack callStack))
+      = text "THUNK" <> parens (pretty exp) $$ nest 3 (prettyCallStack callStack)
    pretty BlackHole = text "BLACKHOLE"
    pretty Error = text "ERROR"
 
 -- | Test for "value" objects.
 isValue :: Object -> Bool
-isValue (Fun {}) = True
-isValue (Pap {}) = True
-isValue (Con {}) = True
+isValue Fun {} = True
+isValue Pap {} = True
+isValue Con {} = True
 isValue _other = False
 
 -- | Test for FUN objects
 isFun :: Object -> Bool
-isFun (Fun {}) = True
+isFun Fun {} = True
 isFun other = False
 
 -- | Test for PAP objects
 isPap :: Object -> Bool
-isPap (Pap {}) = True
+isPap Pap {} = True
 isPap other = False
 
 -- | A top-level declaration (f = obj).
