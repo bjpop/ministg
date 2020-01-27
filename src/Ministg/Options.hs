@@ -46,6 +46,9 @@ versionInfo = unwords [programName, "version", versionNumber]
 processOptions :: [String] -> IO ([Flag], [String])
 processOptions argv =
    case getOpt RequireOrder options argv of
+      (_, [], []) -> do
+        putStrLn $ usageInfo header options
+        exitSuccess
       (flags, nonOpts, [])
          | existsFlag flags Help -> do
               putStrLn $ usageInfo header options
