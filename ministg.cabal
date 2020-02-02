@@ -17,7 +17,7 @@ maintainer:          florbitous@gmail.com
 homepage:            http://www.haskell.org/haskellwiki/Ministg
 build-type:          Simple
 stability:           experimental
-tested-with:         GHC==7.4.1
+tested-with:         GHC==7.4.1, GHC==8.6.5, GHC==8.8.1
 extra-source-files:  README.md test/*.stg
 
 source-repository head
