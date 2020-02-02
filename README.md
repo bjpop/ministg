@@ -5,7 +5,7 @@ Thank you for trying Ministg. Check out the [Documentation].
 ## Usage
 
 ```
-cabal run ministg -- test/Prelude.stg test/sum.stg
+cabal run ministg -- data/Prelude.stg test/sum.stg
 ```
 
 Note that the prelude is not automatically imported and has to be
