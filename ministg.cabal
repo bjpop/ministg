@@ -1,57 +1,61 @@
-name:                ministg
-version:             0.3
-cabal-version:       >= 1.8
-synopsis:            an interpreter for an operational semantics for the STG machine.
-description:         ministg is an interpreter for a simple high-level operational semantics for the STG machine. The
-                     semantics is taken from the research paper "Making a fast curry: push/enter vs. eval/apply
-                     for higher-order languages", by Simon Marlow and Simon Peyton Jones. It provides the option
-                     to trace the execution of the interpreter, rendering each step in a HTML file. This is useful
-                     for understanding the behaviour of the STG machine, and also useful for experimenting with
-                     changes to the machine. It also supports an experimental call stack tracing facility.
-category:            Language
-license:             BSD3
-license-file:        LICENSE
-copyright:           (c) 2009-2012 Bernard James Pope
-author:              Bernard James Pope
-maintainer:          florbitous@gmail.com
-homepage:            http://www.haskell.org/haskellwiki/Ministg
-build-type:          Simple
-stability:           experimental
-tested-with:         GHC==7.4.1, GHC==8.6.5, GHC==8.8.1
-extra-source-files:  README.md test/*.stg
+cabal-version: >=1.8
+name: ministg
+version: 0.3
+license: BSD3
+license-file: LICENSE
+copyright: (c) 2009-2012 Bernard James Pope
+maintainer: florbitous@gmail.com
+author: Bernard James Pope
+stability: experimental
+tested-with: ghc ==7.4.1 ghc ==8.6.5 ghc ==8.8.1
+homepage: http://www.haskell.org/haskellwiki/Ministg
+synopsis: an interpreter for an operational semantics for the STG machine.
+description:
+    ministg is an interpreter for a simple high-level operational semantics for the STG machine. The
+    semantics is taken from the research paper "Making a fast curry: push/enter vs. eval/apply
+    for higher-order languages", by Simon Marlow and Simon Peyton Jones. It provides the option
+    to trace the execution of the interpreter, rendering each step in a HTML file. This is useful
+    for understanding the behaviour of the STG machine, and also useful for experimenting with
+    changes to the machine. It also supports an experimental call stack tracing facility.
+category: Language
+build-type: Simple
+extra-source-files:
+    README.md
+    test/*.stg
 
 source-repository head
-  type:     git
-  location: https://github.com/bjpop/ministg.git
+    type: git
+    location: https://github.com/bjpop/ministg.git
 
+library
+    exposed-modules:
+        Ministg.AST
+        Ministg.Lexer
+        Ministg.Parser
+        Ministg.Utils
+        Ministg.Eval
+        Ministg.Arity
+        Ministg.Pretty
+        Ministg.State
+        Ministg.TraceEval
+        Ministg.CallStack
+        Ministg.Options
+        Ministg.GC
+        Ministg.Annotate
+    hs-source-dirs: src
+    build-depends:
+        base >=3 && <5,
+        monads-tf -any,
+        transformers <0.6,
+        containers <0.7,
+        parsec >=3 && <3.2,
+        pretty <1.2,
+        xhtml <3000.3,
+        filepath <1.5
 
-Library
-  hs-source-dirs: src
-  build-depends:
-      base >= 3 && < 5,
-      monads-tf,
-      transformers,
-      containers,
-      parsec >= 3,
-      pretty,
-      xhtml,
-      filepath
-  exposed-modules:
-      Ministg.AST
-      Ministg.Lexer
-      Ministg.Parser
-      Ministg.Utils
-      Ministg.Eval
-      Ministg.Arity
-      Ministg.Pretty
-      Ministg.State
-      Ministg.TraceEval
-      Ministg.CallStack
-      Ministg.Options
-      Ministg.GC
-      Ministg.Annotate
-
-
-Executable ministg
-  main-is:         src/Main.hs
-  build-depends:   ministg, base >= 3 && <5, directory
+executable ministg
+    main-is: src/Main.hs
+    build-depends:
+        ministg -any,
+        base >=3 && <5,
+        directory <1.4
