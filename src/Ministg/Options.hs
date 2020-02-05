@@ -1,15 +1,15 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      : Ministg.Options
--- Copyright   : (c) 2009-2012 Bernie Pope 
+-- Copyright   : (c) 2009-2012 Bernie Pope
 -- License     : BSD-style
 -- Maintainer  : florbitous@gmail.com
 -- Stability   : experimental
 -- Portability : ghc
 --
--- Command line option processing. 
+-- Command line option processing.
 -----------------------------------------------------------------------------
-module Ministg.Options 
+module Ministg.Options
    ( processOptions
    , programName
    , defaultMaxSteps
@@ -27,12 +27,11 @@ module Ministg.Options
    )
    where
 
-import System.Console.GetOpt 
-import Data.Maybe (fromMaybe)
+import System.Console.GetOpt
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Char (toLower, isDigit)
-import Data.Maybe (catMaybes)
 import System.IO (stderr, hPutStrLn)
-import System.Exit
+import System.Exit (exitFailure, exitSuccess)
 
 programName :: String
 programName = "ministg"
@@ -44,21 +43,22 @@ versionNumber = "0.3"
 versionInfo :: String
 versionInfo = unwords [programName, "version", versionNumber]
 
-processOptions :: [String] -> IO ([Flag], String)
-processOptions argv = 
+processOptions :: [String] -> IO ([Flag], [String])
+processOptions argv =
    case getOpt RequireOrder options argv of
-      (flags, nonOpts, []) 
-         | existsFlag flags Help -> do 
+      (_, [], []) -> do
+        putStrLn $ usageInfo header options
+        exitSuccess
+      (flags, nonOpts, [])
+         | existsFlag flags Help -> do
               putStrLn $ usageInfo header options
-              exitWith ExitSuccess
-         | existsFlag flags Version -> do 
-              putStrLn versionInfo 
-              exitWith ExitSuccess
-         | length nonOpts /= 1 ->
-              raiseError ["You must specify a single input stg file.\n"]  
-         | otherwise -> return (flags, head nonOpts)
+              exitSuccess
+         | existsFlag flags Version -> do
+              putStrLn versionInfo
+              exitSuccess
+         | otherwise -> return (flags, nonOpts)
       (_, _, errs) -> raiseError errs
-      where 
+      where
       header = "Usage: " ++ programName ++ " [OPTION...] file"
       failureMsg = programName ++ ": command line error.\n"
       raiseError errs = do
@@ -66,22 +66,22 @@ processOptions argv =
          exitFailure
 
 probeFlags :: [Flag] -> (Flag -> Maybe a) -> [a]
-probeFlags flags probe = catMaybes (map probe flags)
+probeFlags flags probe = mapMaybe probe flags
 
 probeFlagsFirst :: [Flag] -> (Flag -> Maybe a) -> a -> a
 probeFlagsFirst flags probe defaultValue
-   | null probed = defaultValue 
+   | null probed = defaultValue
    | otherwise = head probed
    where
    probed = probeFlags flags probe
 
 existsFlag :: [Flag] -> Flag -> Bool
 existsFlag flags f
-   = probeFlagsFirst flags probe False 
+   = probeFlagsFirst flags probe False
    where
-   probe someFlag = if f == someFlag then Just True else Nothing 
-    
-data Flag 
+   probe someFlag = if f == someFlag then Just True else Nothing
+
+data Flag
   = Style EvalStyle        -- ^ Which evaluation rules to use (eval/apply or push enter)
   | Trace                  -- ^ Turn tracing on.
   | TraceDir String        -- ^ Directory to save trace file.
@@ -91,7 +91,7 @@ data Flag
   | NoPrelude              -- ^ Do not automatically include the Prelude.
   | NoGC                   -- ^ Disable garbage collection.
   | Help                   -- ^ Print a help message and exit.
-  | Version                -- ^ Print the version number. 
+  | Version                -- ^ Print the version number.
   | Annotate               -- ^ Auto annotate the program with stack markers.
   deriving (Eq, Ord, Show)
 
@@ -114,7 +114,6 @@ options =
  , Option []        ["tracedir"]  (ReqArg TraceDir "DIR")    "directory (DIR) to store trace files"
  , Option ['m']     ["maxsteps"]  (ReqArg mkMaxSteps "STEPS")  "maximum number of reduction STEPS to perform"
  , Option ['c']     ["callstack"] (NoArg CallStack)          "enable call stack tracing"
- , Option []        ["noprelude"] (NoArg NoPrelude)          "do not import the Prelude"
  , Option []        ["nogc"]      (NoArg NoGC)               "disable garbage collector"
  , Option ['d']     ["dump"]      (ReqArg mkDumped "DUMPED") "output DUMPED for debugging purposes (ast, parsed, arity)"
  , Option ['v']     ["version"]   (NoArg Version)            "show version number"
@@ -125,7 +124,7 @@ options =
 defaultTraceDir :: String
 defaultTraceDir = "trace"
 
-defaultEvalStyle :: EvalStyle 
+defaultEvalStyle :: EvalStyle
 defaultEvalStyle = PushEnter
 
 mkStyle :: String -> Flag
@@ -143,16 +142,16 @@ mkDumped = normalMkDumped . map toLower
    normalMkDumped "arity"  = Dump DumpArity
    normalMkDumped other    = Dump DumpNothing
 
-defaultMaxSteps :: Integer 
+defaultMaxSteps :: Integer
 defaultMaxSteps = 1000
 
-mkMaxSteps :: String -> Flag 
-mkMaxSteps [] = MaxSteps defaultMaxSteps 
+mkMaxSteps :: String -> Flag
+mkMaxSteps [] = MaxSteps defaultMaxSteps
 mkMaxSteps n
    | all isDigit n = MaxSteps $ read n
    | otherwise = MaxSteps defaultMaxSteps
 
-getMaxSteps :: [Flag] -> Integer 
+getMaxSteps :: [Flag] -> Integer
 getMaxSteps flags =
       probeFlagsFirst flags probe defaultMaxSteps
       where probe (MaxSteps i) = Just i

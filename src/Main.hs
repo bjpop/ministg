@@ -1,7 +1,7 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      : Main 
--- Copyright   : (c) 2009-2012 Bernie Pope 
+-- Module      : Main
+-- Copyright   : (c) 2009-2012 Bernie Pope
 -- License     : BSD-style
 -- Maintainer  : florbitous@gmail.com
 -- Stability   : experimental
@@ -14,6 +14,7 @@
 
 module Main where
 
+import Data.Monoid (mconcat)
 import System.Exit (exitFailure)
 import Ministg.AST (Program (Program))
 import Ministg.Parser (parser)
@@ -32,26 +33,23 @@ import Ministg.Annotate
 main :: IO ()
 main = do
    args <- getArgs
-   (flags, file) <- processOptions args
+   (flags, files) <- processOptions args
    -- create trace directory if necessary
    when (existsFlag flags Trace) $ do
       let traceDir = getTraceDir flags
       dirExist <- doesDirectoryExist traceDir
-      unless dirExist $ createDirectory traceDir 
-   -- parse the file
-   Program userProgram <- parseFile flags file
+      unless dirExist $ createDirectory traceDir
+   -- parse the files
+   programs <- traverse (parseFile flags) files
+   -- Program userProgram <- parseFile flags files
    -- optionally include the Prelude
-   fullProgram 
-      <- if existsFlag flags NoPrelude
-            then return (Program userProgram)
-            else do Program preludeProgram <- parseFile flags "Prelude.stg"
-                    return $ Program (preludeProgram ++ userProgram)
+   let fullProgram = mconcat programs
    -- possibly annotate the program with stack markers
-   let annotated = if existsFlag flags Annotate 
-                      then annotate fullProgram else fullProgram 
+   let annotated = if existsFlag flags Annotate
+                      then annotate fullProgram else fullProgram
    -- compute arities of known functions
-   let arityProgram = runArity annotated 
-   dump flags DumpArity (prettyText arityProgram) $
+   let arityProgram = runArity annotated
+   dump flags DumpArity (prettyText arityProgram)
       "The program after arity analysis:\n"
    -- interpret the program
    run flags arityProgram
@@ -62,19 +60,19 @@ parseFile flags file = do
    case tryContents of
       Left errorMsg -> do putStrLn $ "Error reading from file: " ++ file
                           putStrLn errorMsg >> exitFailure
-      Right contents -> do
+      Right contents ->
          -- parse the program
          case parser file contents of
-            Left e -> (putStrLn $ "Parse error: " ++ show e) >> exitFailure
-            Right program -> do 
+            Left e -> putStrLn ("Parse error: " ++ show e) >> exitFailure
+            Right program -> do
                dump flags DumpAST (show program) $ "The AST of the program from " ++ file ++ ":\n"
                dump flags DumpParsed (prettyText program) $
                     "The parsed program from " ++ file ++ ":\n"
-               return program 
+               return program
 
-dump :: [Flag] -> Dumped -> String -> String -> IO () 
-dump flags dumped str msg = 
+dump :: [Flag] -> Dumped -> String -> String -> IO ()
+dump flags dumped str msg =
    when (existsFlag flags $ Dump dumped) $ do
-      putStrLn msg 
-      putStrLn str 
+      putStrLn msg
+      putStrLn str
       putStr "\n"
